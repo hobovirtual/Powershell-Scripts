@@ -3,3 +3,4 @@ authentication,SHA1
 privacy,AES128
 hwsrc,indications
 enable,true
+test
