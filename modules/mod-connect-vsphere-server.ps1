@@ -62,7 +62,7 @@ FUNCTION connect-vsphere-server () {
 	)
 
 	#------------------------------------------#
-	# Variable Initialisation
+	# Variable(s) Initialisation
 	#------------------------------------------#
 
 	$connected=$False
