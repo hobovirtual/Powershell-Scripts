@@ -78,6 +78,7 @@ PARAM (
 # ----------------------------------------------- #
 
 $ScriptDirectory = Split-Path $myInvocation.MyCommand.Path
+$ScriptFullPath = Split-Path $myInvocation.MyCommand.Path -Leaf
 
 # ----------------------------------------------- #
 # Modules Import
