@@ -84,10 +84,10 @@ $ScriptDirectory = Split-Path $myInvocation.MyCommand.Path
 # ----------------------------------------------- #
 
 # Function Showing Help for this script
-Import-Module -Name "$ScriptDirectory\Modules\mod-show-usage.ps1" -Force:$true
+Import-Module -Name "$ScriptDirectory\modules\mod-show-usage.ps1" -Force:$true
 
 # Function to Connect to vCenter or vSphere Host
-Import-Module -Name "$ScriptDirectory\Modules\mod-connect-vsphere-server.ps1" -Force:$true		
+Import-Module -Name "$ScriptDirectory\modules\mod-connect-vsphere-server.ps1" -Force:$true		
 
 # =================================================================================================================================================
 # IF -Help parameter is used - Show Script Usage
