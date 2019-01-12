@@ -70,7 +70,8 @@ PARAM (
   [string]$vc,                                    # String - vCenter Connection IP|FQDN - Single input - Needs to provide a cluster or host(s)
   [string[]]$cl,                                  # String - vSphere Cluster Name as listed in vCenter - Multiple Input supported comma seperated
   [string[]]$esx,                                 # String - vSphere Host(s) IP|FQDN - Multiple Input supported comma seperated       
-  [switch]$check                                  # Switch - Check Compliancy against one or more vSphere Host(s)
+  [switch]$check,                                 # Switch - Check Compliancy against one or more vSphere Host(s)
+  [switch]$help                                   # Switch - Display Help with Comment Prefix #@ 
 )
 
 # ----------------------------------------------- #
@@ -92,7 +93,7 @@ Import-Module -Name "$ScriptDirectory\modules\mod-connect-vsphere-server.ps1" -F
 
 # =================================================================================================================================================
 # IF -Help parameter is used - Show Script Usage
-IF ($help) { 														
+IF ($help) {
   Show-Usage -ScriptFullPath $ScriptFullPath
   EXIT
 }
