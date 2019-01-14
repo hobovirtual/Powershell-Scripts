@@ -102,12 +102,14 @@ IF ($help) {
 IF ($vc) {
   IF ($cl -OR $esx) {
     $rc = connect-vsphere-server -vc $vc
+
+    IF ($rc) {
+      # Build List of all vSphere Host(s) in Cluster(s) provided
+      $esx = Get-VMHost -Location $cl
+    }
+    
   } ELSE {
     Write-Error "Please set a single or multiple cluster/esxi host when specifying a vCenter Server connection, use -help for additional information"
     EXIT
   }
-}
-
-IF ($rc) {
-  Write-Host "ben oui"
 }
