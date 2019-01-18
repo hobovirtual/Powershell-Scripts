@@ -98,18 +98,66 @@ IF ($help) {
   EXIT
 }
 
-# Parameters Input Validation
+# Parameters Input Validation - If vCenter > Build list of esxi hosts
 IF ($vc) {
   IF ($cl -OR $esx) {
     $rc = connect-vsphere-server -vc $vc
 
     IF ($rc) {
       # Build List of all vSphere Host(s) in Cluster(s) provided
-      $esx = Get-VMHost -Location $cl
+      $esx = (Get-VMHost -Location $cl).Name
     }
     
   } ELSE {
     Write-Error "Please set a single or multiple cluster/esxi host when specifying a vCenter Server connection, use -help for additional information"
     EXIT
   }
+}
+
+IF ($esx) {
+  # Import the Desired Configuration State Stored in a CSV file
+  $snmpdef = Import-Csv $ScriptDirectory/conf/snmp-config.csv
+
+  FOREACH ($esxhost in $esx) {
+    # Connect to individual esxi host If no vCenter Connection was provided
+    IF (!$vc) {
+      connect-vsphere-server -esx $esxhost
+    }
+    # Get esxcli for specified esxi host
+    $esxcli = Get-EsxCli -VMHost $esxhost -V2
+    # Retrieve current SNMP configuration
+    $snmpconf = $esxcli.system.snmp.get.Invoke()
+
+    IF ($esxcli) {
+      # Following Check section will only report on SNMP configuration vs desired state
+      IF ($check) {
+        Write-Host "Validating SNMP configuration on $esxhost"
+        
+        FOR ($i=0;$i -lt $snmpdef.count;$i++) {
+          $snmpsetting = $snmpdef[$i].setting
+          $snmpvalue = $snmpdef[$i].value
+          Write-Host $snmpsetting": " -NoNewline
+          
+          IF ($snmpvalue) {
+            IF ($snmpconf.$snmpsetting -eq $snmpvalue) {
+              Write-Host -BackgroundColor Green "PASS" -ForegroundColor Black
+            } ELSE {
+              Write-Host -BackgroundColor Red "FAIL"
+            }
+          } ELSE {
+            IF ($snmpconf.$snmpsetting -ne $null) {
+              Write-Host -BackgroundColor Green "PASS" -ForegroundColor Black
+            } ELSE {
+              Write-Host -BackgroundColor Red "FAIL"
+            }
+          }
+          
+        }
+      }
+    } ELSE {
+      Write-Error "Unable to get esxcli connection for $esxhost"
+    }
+  }
+} ELSE {
+  Write-Error "Please validate input and execution, list of esxi host is empty"
 }
