@@ -69,7 +69,7 @@ FUNCTION validate-snmp-settings () {
 	#------------------------------------------#
 
     # Get esxcli for specified esxi host
-    $esxcli = Get-EsxCli -VMHost $esxhost -V2
+    $esxcli = Get-EsxCli -VMHost $esx -V2
 
     IF ($esxcli) {
         # Retrieve current SNMP configuration
@@ -78,7 +78,7 @@ FUNCTION validate-snmp-settings () {
         # Following Check section will only report on SNMP configuration vs desired state
         IF ($check) {
             IF ($display) {
-                Write-Host "Validating SNMP configuration on $esxhost"
+                Write-Host "Validating SNMP configuration on $esx"
             }
 
             FOR ($i=0;$i -lt $snmpdef.count;$i++) {
@@ -112,6 +112,6 @@ FUNCTION validate-snmp-settings () {
             }
         }
     }
-    Write-Host $notcompliant
+    Write-Host "Content to be returned: "$notcompliant
 	RETURN $notcompliant
 }
