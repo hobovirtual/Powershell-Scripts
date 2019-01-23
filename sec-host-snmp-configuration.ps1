@@ -49,7 +49,7 @@
 #@
 #@    [ -vc ]       : virtual Center
 #@    [ -cl ]       : vSphere Cluster
-#@    [ -esx ]      : vSphere Host(s) - Currently not working
+#@    [ -esx ]      : vSphere Host(s)
 #@    [ -check ]    : Validate Configuration based on Standard definition
 #@
 #@  Common Parameters
@@ -71,6 +71,7 @@ PARAM (
   [string[]]$cl,                                  # String - vSphere Cluster Name as listed in vCenter - Multiple Input supported comma seperated
   [string[]]$esx,                                 # String - vSphere Host(s) IP|FQDN - Multiple Input supported comma seperated       
   [switch]$check,                                 # Switch - Check Compliancy against one or more vSphere Host(s)
+  [switch]$set,                                   # Switch - Set SNMP configuration against one or more vSphere Host(s)
   [switch]$help                                   # Switch - Display Help with Comment Prefix #@ 
 )
 
@@ -78,8 +79,10 @@ PARAM (
 # Local Variables Definition
 # ----------------------------------------------- #
 
-$ScriptDirectory = Split-Path $myInvocation.MyCommand.Path
-$ScriptFullPath = Split-Path $myInvocation.MyCommand.Path -Leaf
+$ScriptDirectory = Split-Path $myInvocation.MyCommand.Path        # Script Full Directory Path (running from) ex: C:\temp\
+$ScriptFullPath = Split-Path $myInvocation.MyCommand.Path -Leaf   # Script Full Path with name ex: C:\temp\myscript.ps1
+$nonecompliantsettings = []                                       # Initialize empty array
+$csv = $ScriptDirectory/conf/snmp-config.csv                      # CSV file with SNMP desired settings definition
 
 # ----------------------------------------------- #
 # Modules Import
@@ -89,14 +92,17 @@ $ScriptFullPath = Split-Path $myInvocation.MyCommand.Path -Leaf
 Import-Module -Name "$ScriptDirectory\modules\mod-show-usage.ps1" -Force:$true
 
 # Function to Connect to vCenter or vSphere Host
-Import-Module -Name "$ScriptDirectory\modules\mod-connect-vsphere-server.ps1" -Force:$true		
+Import-Module -Name "$ScriptDirectory\modules\mod-connect-vsphere-server.ps1" -Force:$true
+
+# Function Validating SNMP setting(s) against a vSphere Host
+Import-Module -Name "$ScriptDirectory\modules\mod-validate-snmp-settings.ps1" -Force:$true
 
 # =================================================================================================================================================
 # IF -Help parameter is used - Show Script Usage
-IF ($help) {
+IF ($help -OR (!$check -AND !$set)) {
   Show-Usage -ScriptFullPath $ScriptFullPath
   EXIT
-}
+} 
 
 # Parameters Input Validation - If vCenter > Build list of esxi hosts
 IF ($vc) {
@@ -107,7 +113,7 @@ IF ($vc) {
       # Build List of all vSphere Host(s) in Cluster(s) provided
       $esx = (Get-VMHost -Location $cl).Name
     }
-    
+
   } ELSE {
     Write-Error "Please set a single or multiple cluster/esxi host when specifying a vCenter Server connection, use -help for additional information"
     EXIT
@@ -115,45 +121,16 @@ IF ($vc) {
 }
 
 IF ($esx) {
-  # Import the Desired Configuration State Stored in a CSV file
-  $snmpdef = Import-Csv $ScriptDirectory/conf/snmp-config.csv
 
   FOREACH ($esxhost in $esx) {
     # Connect to individual esxi host If no vCenter Connection was provided
     IF (!$vc) {
-      connect-vsphere-server -esx $esxhost
+      $rc = connect-vsphere-server -esx $esxhost
     }
-    # Get esxcli for specified esxi host
-    $esxcli = Get-EsxCli -VMHost $esxhost -V2
-    # Retrieve current SNMP configuration
-    $snmpconf = $esxcli.system.snmp.get.Invoke()
 
-    IF ($esxcli) {
-      # Following Check section will only report on SNMP configuration vs desired state
-      IF ($check) {
-        Write-Host "Validating SNMP configuration on $esxhost"
-        
-        FOR ($i=0;$i -lt $snmpdef.count;$i++) {
-          $snmpsetting = $snmpdef[$i].setting
-          $snmpvalue = $snmpdef[$i].value
-          Write-Host $snmpsetting": " -NoNewline
-          
-          IF ($snmpvalue) {
-            IF ($snmpconf.$snmpsetting -eq $snmpvalue) {
-              Write-Host -BackgroundColor Green "PASS" -ForegroundColor Black
-            } ELSE {
-              Write-Host -BackgroundColor Red "FAIL"
-            }
-          } ELSE {
-            IF ($snmpconf.$snmpsetting -ne $null) {
-              Write-Host -BackgroundColor Green "PASS" -ForegroundColor Black
-            } ELSE {
-              Write-Host -BackgroundColor Red "FAIL"
-            }
-          }
-          
-        }
-      }
+    # Following Check section will only report on SNMP configuration vs desired state
+    IF ($check) {
+      $nonecompliantsettings = validate-snmp-settings -esx $esx -csv $csv
     } ELSE {
       Write-Error "Unable to get esxcli connection for $esxhost"
     }
