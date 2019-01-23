@@ -61,7 +61,7 @@ FUNCTION validate-snmp-settings () {
 	# Variable(s) Initialisation
 	#------------------------------------------#
 
-    $notcompliant = []                         # Initialize an empty array to storage none compliant setting(s)
+    $notcompliant = @()                        # Initialize an empty array to storage none compliant setting(s)
     $snmpdef = Import-Csv $csv                 # Import the Desired Configuration State Stored in a CSV file
 
 	#------------------------------------------#
