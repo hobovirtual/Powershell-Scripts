@@ -130,9 +130,11 @@ IF ($esx) {
 
     # Following Check section will only report on SNMP configuration vs desired state
     IF ($check) {
+      validate-snmp-settings -esx $esx -csv $csv -display
+    } 
+
+    IF ($set) {
       $nonecompliantsettings = validate-snmp-settings -esx $esx -csv $csv
-    } ELSE {
-      Write-Error "Unable to get esxcli connection for $esxhost"
     }
   }
 } ELSE {
