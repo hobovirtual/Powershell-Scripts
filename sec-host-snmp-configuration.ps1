@@ -134,7 +134,6 @@ IF ($esx) {
     } 
 
     IF ($set) {
-      Write-Host "test"
       $nonecompliantsettings = validate-snmp-settings -esx $esx -csv $csv
       Write-Host $nonecompliantsettings
     }
