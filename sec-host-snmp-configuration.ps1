@@ -82,7 +82,7 @@ PARAM (
 $ScriptDirectory = Split-Path $myInvocation.MyCommand.Path        # Script Full Directory Path (running from) ex: C:\temp\
 $ScriptFullPath = Split-Path $myInvocation.MyCommand.Path -Leaf   # Script Full Path with name ex: C:\temp\myscript.ps1
 $nonecompliantsettings = @()                                      # Initialize empty array
-$csv = $ScriptDirectory/conf/snmp-config.csv                      # CSV file with SNMP desired settings definition
+$csv = "$ScriptDirectory/conf/snmp-config.csv "                   # CSV file with SNMP desired settings definition
 
 # ----------------------------------------------- #
 # Modules Import
