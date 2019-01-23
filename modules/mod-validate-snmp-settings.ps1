@@ -95,7 +95,7 @@ FUNCTION validate-snmp-settings () {
                         IF ($display) {
                             Write-Host -BackgroundColor Red "FAIL"
                         }
-                        $notcompliant += $snmpconf.$snmpsetting
+                        $notcompliant += $snmpsetting
                     }
                 } ELSE {
                     IF ($snmpconf.$snmpsetting -ne $null) {
@@ -106,11 +106,12 @@ FUNCTION validate-snmp-settings () {
                         IF ($display) {
                             Write-Host -BackgroundColor Red "FAIL"
                         }
-                        $notcompliant += $snmpconf.$snmpsetting
+                        $notcompliant += $snmpsetting
                     }
                 } 
             }
         }
     }
+    Write-Host $notcompliant
 	RETURN $notcompliant
 }
