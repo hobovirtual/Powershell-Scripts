@@ -135,6 +135,7 @@ IF ($esx) {
 
     IF ($set) {
       $nonecompliantsettings = validate-snmp-settings -esx $esx -csv $csv
+      Write-Debug $nonecompliantsettings
     }
   }
 } ELSE {
