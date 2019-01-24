@@ -74,6 +74,10 @@ FUNCTION validate-snmp-settings () {
         # Retrieve current SNMP configuration
         $snmpconf = $esxcli.system.snmp.get.Invoke()
 
+        IF ($check) {
+            Write-Host "Validating SNMP configuration on $esx"
+        }
+
         # Following Check section will only report on SNMP configuration vs desired state
         FOR ($i=0;$i -lt $snmpdef.count;$i++) {
             $snmpsetting = $snmpdef[$i].setting         # Get SNMP setting defined in CSV file
@@ -95,7 +99,6 @@ FUNCTION validate-snmp-settings () {
                 }
             }
             IF ($check) {
-                Write-Host "Validating SNMP configuration on $esx"
                 $validationout | Add-Member -type NoteProperty -name "SNMP Setting" -value $snmpsetting
                 $validationout | Add-Member -type NoteProperty -Name "Valdiation Result" -Value $result
             }
