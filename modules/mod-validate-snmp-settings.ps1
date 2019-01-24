@@ -107,7 +107,16 @@ FUNCTION validate-snmp-settings () {
         }
     }
     IF ($check) {
-        Write-Host ($outtable | Format-Table -AutoSize | Out-String)
+        $outtable = $outtable | Format-Table -AutoSize | Out-String
+        FOREACH ($line in $outtable) {
+            IF ($line -match "PASS") {
+                Write-Host $line -ForegroundColor Green
+            } ELSEIF ($line -match "FAIL") {
+                Write-Host $line -ForegroundColor Red
+            } ELSE {
+                Write-Host $line
+            }
+        }
     }
 	RETURN $notcompliant
 }
