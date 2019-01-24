@@ -104,7 +104,9 @@ FUNCTION validate-snmp-settings () {
             }
         }
     }
-    $validationoutput | Format-List
-    $validationout | Format-Table –AutoSize
+    IF ($check) {
+        $validationoutput | Format-List
+        $validationout | Format-Table -AutoSize
+    }
 	RETURN $notcompliant
 }
