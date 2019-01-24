@@ -143,3 +143,6 @@ IF ($esx) {
 } ELSE {
   Write-Error "Please validate input and execution, list of esxi host is empty"
 }
+
+# Disconnect from vCenter Server
+Disconnect-VIServer * -Force:$true -Confirm:$false

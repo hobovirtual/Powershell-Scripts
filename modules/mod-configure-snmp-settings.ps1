@@ -88,10 +88,10 @@ FUNCTION configure-snmp-settings () {
                 }
             } ELSE {
                 # Generate auth-hash and priv-hash
-                $hash = $esxcli.system.snmp.hash("passphrase","passphrase",$true)
+                $hash = $esxcli.system.snmp.hash.Invoke(@{authhash = "passphrase"; privhash = "passphrase"; rawsecret = "true"})
                 Write-Host $hash
-                Write-Host "username/$hash.authhash/$hash.privhash/priv"
-                #$rc = $esxcli.system.snmp.set.Invoke(@{$setting = "username/$hash.authhash/$hash.privhash/priv"})
+                Write-Host "username/$($hash.authhash)/$($hash.privhash)/priv"
+                #$rc = $esxcli.system.snmp.set.Invoke(@{$setting = "username/$($hash.authhash)/$($hash.privhash)/priv"})
             }
         }
     }
