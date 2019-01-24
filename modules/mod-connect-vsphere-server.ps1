@@ -27,9 +27,9 @@
  Test Environment:	PowerShell 5.1.17134.407
 					PowerCli Module 11.0.0.10336080
 					Windows 10 Workstation
-                   vSphere 6.7
+                    vSphere 6.7
 
-                   Above is my test environment, but this may potentially work with older supported versions
+                    Above is my test environment, but this may potentially work with older supported versions
  -------------------------------------------------------------------------------------------------------------------------
  Pre-requisite:	Rights to connect to the target vCenter or vSphere Server
  -------------------------------------------------------------------------------------------------------------------------

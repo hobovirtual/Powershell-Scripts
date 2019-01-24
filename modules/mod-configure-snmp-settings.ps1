@@ -62,7 +62,6 @@ FUNCTION configure-snmp-settings () {
 	#------------------------------------------#
 
     $snmpdef = Import-Csv $csv                 # Import the Desired Configuration State Stored in a CSV file
-    $tab = [char]9
 
 	#------------------------------------------#
 	# Module Action(s)
@@ -76,11 +75,11 @@ FUNCTION configure-snmp-settings () {
         $snmpvalue = ($snmpdef | where-object setting -eq $setting).value
         Write-Host "Configuring SNMP setting(s) on $esx $tab"
 
-        IF ($snmpvalue) {
+        IF ($snmpsetting -ne "users") {
             $rc = $esxcli.system.snmp.set.Invoke(@{$setting = $snmpvalue})
         } ELSE {
             # Generate auth-hash and priv-hash
-            $hash = $esxcli.system.snmp.hash.Invoke(@{authhash = "passphrase"; privhash = "passphrase"; rawsecret = "true"})
+            $hash = $esxcli.system.snmp.hash.Invoke(@{authhash = $snmpvalue; privhash = $snmpvalue; rawsecret = "true"})
             $rc = $esxcli.system.snmp.set.Invoke(@{$setting = "username/$($hash.authhash)/$($hash.privhash)/priv"})
         }
 

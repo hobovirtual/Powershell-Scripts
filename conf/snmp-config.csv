@@ -3,4 +3,4 @@ authentication,SHA1
 privacy,AES128
 hwsrc,indications
 enable,true
-users,
+users,passphrase

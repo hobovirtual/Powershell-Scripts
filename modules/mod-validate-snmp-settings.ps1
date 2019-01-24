@@ -61,7 +61,7 @@ FUNCTION validate-snmp-settings () {
 
     $notcompliant = @()                        # Initialize an empty array to storage none compliant setting(s)
     $snmpdef = Import-Csv $csv                 # Import the Desired Configuration State Stored in a CSV file
-    $outtable = @()
+    $outtable = @()                            # Initialize empty array
 
 	#------------------------------------------#
 	# Module Action(s)
@@ -83,7 +83,7 @@ FUNCTION validate-snmp-settings () {
             $snmpsetting = $snmpdef[$i].setting         # Get SNMP setting defined in CSV file
             $snmpvalue = $snmpdef[$i].value             # Get SNMP setting value defined in CSV file
             
-            IF ($snmpvalue) {
+            IF ($snmpsetting -ne "users") {
                 IF ($snmpconf.$snmpsetting -eq $snmpvalue) {
                     $result = "PASS"
                 } ELSE {
@@ -108,6 +108,7 @@ FUNCTION validate-snmp-settings () {
     }
     IF ($check) {
         $lines = ($outtable | Format-Table -AutoSize | Out-String) -replace "`r", "" -split "`n"
+        # Display Formatting
         FOREACH ($line in $lines) {
             IF ($line -match "PASS") {
                 Write-Host $line -ForegroundColor Green

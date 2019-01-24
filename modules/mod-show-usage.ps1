@@ -30,7 +30,7 @@
 
                     Above is my test environment, but this may potentially work with older supported versions
  -------------------------------------------------------------------------------------------------------------------------
- Parameter(s):		Script_FullPath		-- This variable need to contains the script fullpath C:\Script\Test.ps1
+ Parameter(s):		Script_FullPath	-- This variable need to contains the script fullpath C:\Script\Test.ps1
  -------------------------------------------------------------------------------------------------------------------------
 #>
 FUNCTION Show-Usage {
