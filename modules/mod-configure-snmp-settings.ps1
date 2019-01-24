@@ -85,7 +85,7 @@ FUNCTION configure-snmp-settings () {
         }
 
         $validationout = New-Object System.Object
-        $validationout | Add-Member -type NoteProperty -name "SNMP Setting" -value $snmpsetting
+        $validationout | Add-Member -type NoteProperty -name "SNMP Setting" -value $setting
         IF ($rc) {
             $validationout | Add-Member -type NoteProperty -Name "Result" -Value "SUCCESS"
         } ELSE {
