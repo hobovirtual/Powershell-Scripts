@@ -127,7 +127,7 @@ IF ($esx) {
   FOREACH ($esxhost in $esx) {
     # Initialize empty array
     $nonecompliantsettings = @()
-    
+
     # Connect to individual esxi host If no vCenter Connection was provided
     IF (!$vc) {
       $rc = connect-vsphere-server -esx $esxhost
@@ -135,7 +135,7 @@ IF ($esx) {
 
     # Following module will check and report the SNMP configuration vs desired state - If check switch is defined, the result will be displayed
     $nonecompliantsettings = validate-snmp-settings -esx $esxhost -csv $csv
-
+Write-Host $nonecompliantsettings.count
     IF ($nonecompliantsettings -and $set) {
       FOREACH ($setting in $nonecompliantsettings) {
         configure-snmp-settings  -esx $esxhost -csv $csv -setting $setting
@@ -147,4 +147,4 @@ IF ($esx) {
 }
 
 # Disconnect from vCenter Server
-Disconnect-VIServer * -Force:$true -Confirm:$false
+#Disconnect-VIServer * -Force:$true -Confirm:$false
