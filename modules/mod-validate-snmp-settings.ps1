@@ -107,8 +107,7 @@ FUNCTION validate-snmp-settings () {
         }
     }
     IF ($check) {
-        $outtable | Format-Table -AutoSize
-        Write-Host $outtable
+        Write-Host ($outtable | Format-List | Out-String)
     }
 	RETURN $notcompliant
 }
