@@ -61,7 +61,7 @@ FUNCTION validate-snmp-settings () {
 
     $notcompliant = @()                        # Initialize an empty array to storage none compliant setting(s)
     $snmpdef = Import-Csv $csv                 # Import the Desired Configuration State Stored in a CSV file
-    $output = @()
+    $outtable = @()
 
 	#------------------------------------------#
 	# Module Action(s)
@@ -102,12 +102,13 @@ FUNCTION validate-snmp-settings () {
                 $validationout = New-Object System.Object
                 $validationout | Add-Member -type NoteProperty -name "SNMP Setting" -value $snmpsetting
                 $validationout | Add-Member -type NoteProperty -Name "Valdiation Result" -Value $result
-                $output += $validationout
+                $outtable += $validationout
             }
         }
     }
-    IF ($output) {
-        $output | Format-Table -AutoSize
+    IF ($check) {
+        $outtable | Format-List
+        $outtable | Format-Table -AutoSize
     }
 	RETURN $notcompliant
 }
