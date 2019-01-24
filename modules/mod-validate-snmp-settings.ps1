@@ -36,7 +36,7 @@
 
 						csv			file definition
                         esx 		vSphere Host to validate SNMP settings against
-                        display     when defined, this switch will display text
+                        check     when defined, this switch will check text
 
  -------------------------------------------------------------------------------------------------------------------------
 
@@ -53,8 +53,7 @@ FUNCTION validate-snmp-settings () {
 
 	PARAM(
 		[String]$esx,
-        [String]$csv,
-        [switch]$display
+        [String]$csv
 	)
 
 	#------------------------------------------#
@@ -76,7 +75,7 @@ FUNCTION validate-snmp-settings () {
         $snmpconf = $esxcli.system.snmp.get.Invoke()
 
         # Following Check section will only report on SNMP configuration vs desired state
-        IF ($display) {
+        IF ($check) {
             Write-Host "Validating SNMP configuration on $esx"
         }
 
@@ -85,24 +84,24 @@ FUNCTION validate-snmp-settings () {
             $snmpvalue = $snmpdef[$i].value             # Get SNMP setting value defined in CSV file
             
             IF ($snmpvalue) {
-                IF ($display) {
+                IF ($check) {
                     Write-Host $snmpsetting": " -NoNewline
                 }
-                IF ($snmpconf.$snmpsetting -eq $snmpvalue -and $display) {
+                IF ($snmpconf.$snmpsetting -eq $snmpvalue -and $check) {
                     Write-Host -BackgroundColor Green "PASS" -ForegroundColor Black
                 } ELSE {
-                    IF ($display) {
+                    IF ($check) {
                         Write-Host -BackgroundColor Red "FAIL"
                     }
                     $notcompliant += $snmpsetting
                 }
             } ELSE {
                 IF ($snmpconf.$snmpsetting -ne $null) {
-                    IF ($display) {
+                    IF ($check) {
                         Write-Host -BackgroundColor Green "PASS" -ForegroundColor Black
                     }
                 } ELSE {
-                    IF ($display) {
+                    IF ($check) {
                         Write-Host -BackgroundColor Red "FAIL"
                     }
                     $notcompliant += $snmpsetting
