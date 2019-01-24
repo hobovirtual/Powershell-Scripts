@@ -131,10 +131,8 @@ IF ($esx) {
     # Following Check section will only report on SNMP configuration vs desired state
     IF ($check) {
       validate-snmp-settings -esx $esx -csv $csv -display
-    } 
-
-    IF ($set) {
-      validate-snmp-settings -esx $esx -csv $csv -display
+    } ELSE {
+      $nonecompliantsettings = validate-snmp-settings -esx $esx -csv $csv -display
       Write-Host $nonecompliantsettings
     }
   }
