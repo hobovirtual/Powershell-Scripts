@@ -76,42 +76,39 @@ FUNCTION validate-snmp-settings () {
         $snmpconf = $esxcli.system.snmp.get.Invoke()
 
         # Following Check section will only report on SNMP configuration vs desired state
-        IF ($check) {
-            IF ($display) {
-                Write-Host "Validating SNMP configuration on $esx"
-            }
+        IF ($display) {
+            Write-Host "Validating SNMP configuration on $esx"
+        }
 
-            FOR ($i=0;$i -lt $snmpdef.count;$i++) {
-                $snmpsetting = $snmpdef[$i].setting         # Get SNMP setting defined in CSV file
-                $snmpvalue = $snmpdef[$i].value             # Get SNMP setting value defined in CSV file
-              
-                IF ($snmpvalue) {
+        FOR ($i=0;$i -lt $snmpdef.count;$i++) {
+            $snmpsetting = $snmpdef[$i].setting         # Get SNMP setting defined in CSV file
+            $snmpvalue = $snmpdef[$i].value             # Get SNMP setting value defined in CSV file
+            
+            IF ($snmpvalue) {
+                IF ($display) {
+                    Write-Host $snmpsetting": " -NoNewline
+                }
+                IF ($snmpconf.$snmpsetting -eq $snmpvalue -and $display) {
+                    Write-Host -BackgroundColor Green "PASS" -ForegroundColor Black
+                } ELSE {
                     IF ($display) {
-                        Write-Host $snmpsetting": " -NoNewline
+                        Write-Host -BackgroundColor Red "FAIL"
                     }
-                    IF ($snmpconf.$snmpsetting -eq $snmpvalue -and $display) {
+                    $notcompliant += $snmpsetting
+                }
+            } ELSE {
+                IF ($snmpconf.$snmpsetting -ne $null) {
+                    IF ($display) {
                         Write-Host -BackgroundColor Green "PASS" -ForegroundColor Black
-                    } ELSE {
-                        IF ($display) {
-                            Write-Host -BackgroundColor Red "FAIL"
-                        }
-                        $notcompliant += $snmpsetting
                     }
                 } ELSE {
-                    IF ($snmpconf.$snmpsetting -ne $null) {
-                        IF ($display) {
-                            Write-Host -BackgroundColor Green "PASS" -ForegroundColor Black
-                        }
-                    } ELSE {
-                        IF ($display) {
-                            Write-Host -BackgroundColor Red "FAIL"
-                        }
-                        $notcompliant += $snmpsetting
+                    IF ($display) {
+                        Write-Host -BackgroundColor Red "FAIL"
                     }
-                } 
-            }
+                    $notcompliant += $snmpsetting
+                }
+            } 
         }
     }
-    Write-Host "Content to be returned: "$notcompliant
 	RETURN $notcompliant
 }
