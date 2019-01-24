@@ -74,7 +74,7 @@ FUNCTION configure-snmp-settings () {
     IF ($esxcli) {
         # Retrieve the setting value from the SNMP definition
         $snmpvalue = ($snmpdef | where-object setting -eq $setting).value
-        Write-Host "Configuring SNMP setting $setting on $esx $tab" -NoNewline
+        Write-Host "Configuring SNMP setting(s) on $esx $tab"
 
         IF ($snmpvalue) {
             $rc = $esxcli.system.snmp.set.Invoke(@{$setting = $snmpvalue})
@@ -84,10 +84,23 @@ FUNCTION configure-snmp-settings () {
             $rc = $esxcli.system.snmp.set.Invoke(@{$setting = "username/$($hash.authhash)/$($hash.privhash)/priv"})
         }
 
+        $validationout = New-Object System.Object
+        $validationout | Add-Member -type NoteProperty -name "SNMP Setting" -value $snmpsetting
         IF ($rc) {
-            Write-Host -BackgroundColor Green "SUCCESS" -ForegroundColor Black
+            $validationout | Add-Member -type NoteProperty -Name "Result" -Value "SUCCESS"
         } ELSE {
-            Write-Host -BackgroundColor Red "FAILED"
+            $validationout | Add-Member -type NoteProperty -Name "Result" -Value "FAILED"
+        }
+        $outtable += $validationout
+        $lines = ($outtable | Format-Table -AutoSize | Out-String) -replace "`r", "" -split "`n"
+        FOREACH ($line in $lines) {
+            IF ($line -match "SUCCESS") {
+                Write-Host $line -ForegroundColor Green
+            } ELSEIF ($line -match "FAILED") {
+                Write-Host $line -ForegroundColor Red
+            } ELSE {
+                Write-Host $line
+            }
         }
     }
 }

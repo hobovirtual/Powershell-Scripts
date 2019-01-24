@@ -107,8 +107,8 @@ FUNCTION validate-snmp-settings () {
         }
     }
     IF ($check) {
-        $outtable = $outtable | Format-Table -AutoSize | Out-String
-        FOREACH ($line in $outtable) {
+        $lines = ($outtable | Format-Table -AutoSize | Out-String) -replace "`r", "" -split "`n"
+        FOREACH ($line in $lines) {
             IF ($line -match "PASS") {
                 Write-Host $line -ForegroundColor Green
             } ELSEIF ($line -match "FAIL") {
