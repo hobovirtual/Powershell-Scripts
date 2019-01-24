@@ -130,6 +130,10 @@ IF ($esx) {
 
     # Following Check section will only report on SNMP configuration vs desired state
     $nonecompliantsettings = validate-snmp-settings -esx $esx -csv $csv
+
+    IF ($nonecompliantsettings -and $set) {
+      Write-Host $nonecompliantsettings
+    }
   }
 } ELSE {
   Write-Error "Please validate input and execution, list of esxi host is empty"
