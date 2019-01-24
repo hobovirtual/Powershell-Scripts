@@ -61,7 +61,7 @@ FUNCTION validate-snmp-settings () {
 
     $notcompliant = @()                        # Initialize an empty array to storage none compliant setting(s)
     $snmpdef = Import-Csv $csv                 # Import the Desired Configuration State Stored in a CSV file
-    $tab = [char]9
+    $validationout = New-Object System.Object  # PS Object used for output
 
 	#------------------------------------------#
 	# Module Action(s)
@@ -75,40 +75,34 @@ FUNCTION validate-snmp-settings () {
         $snmpconf = $esxcli.system.snmp.get.Invoke()
 
         # Following Check section will only report on SNMP configuration vs desired state
-        IF ($check) {
-            Write-Host "Validating SNMP configuration on $esx"
-        }
-
         FOR ($i=0;$i -lt $snmpdef.count;$i++) {
             $snmpsetting = $snmpdef[$i].setting         # Get SNMP setting defined in CSV file
             $snmpvalue = $snmpdef[$i].value             # Get SNMP setting value defined in CSV file
-
-            IF ($check) {
-                Write-Host $snmpsetting": " -NoNewline
-            }
+            $validationoutput += $snmpsetting": " -NoNewline
             
             IF ($snmpvalue) {
                 IF ($snmpconf.$snmpsetting -eq $snmpvalue -and $check) {
-                    Write-Host -BackgroundColor Green "PASS" -ForegroundColor Black
+                    $result = "PASS"
                 } ELSE {
-                    IF ($check) {
-                        Write-Host -BackgroundColor Red "FAIL"
-                    }
+                    $result = "FAIL"
                     $notcompliant += $snmpsetting
                 }
             } ELSE {
                 IF ($snmpconf.$snmpsetting -ne $null) {
-                    IF ($check) {
-                        Write-Host -BackgroundColor Green "PASS" -ForegroundColor Black
-                    }
+                    $result = "PASS"
                 } ELSE {
-                    IF ($check) {
-                        Write-Host -BackgroundColor Red "FAIL"
-                    }
+                    $result = "FAIL"
                     $notcompliant += $snmpsetting
                 }
-            } 
+            }
+            IF ($check) {
+                Write-Host "Validating SNMP configuration on $esx"
+                $validationout | Add-Member -type NoteProperty -name "SNMP Setting" -value $snmpsetting
+                $validationout | Add-Member -type NoteProperty -Name "Valdiation Result" -Value $result
+            }
         }
     }
+    $validationoutput | Format-List
+    $validationout | Format-Table –AutoSize
 	RETURN $notcompliant
 }
