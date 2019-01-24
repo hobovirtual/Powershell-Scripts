@@ -99,7 +99,7 @@ FUNCTION validate-snmp-settings () {
                 }
             }
             IF ($check) {
-                $validationout = New-Object System.ObjectDisposedException
+                $validationout = New-Object System.Object
                 $validationout | Add-Member -type NoteProperty -name "SNMP Setting" -value $snmpsetting
                 $validationout | Add-Member -type NoteProperty -Name "Valdiation Result" -Value $result
                 $output += $validationout
