@@ -1,2 +1,2 @@
 # Powershell-Scripts
-This private repo will host various powershell scripts
+This repository is hosting collection of powershell scripts mainly for VMware Management solutions.
