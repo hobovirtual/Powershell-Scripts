@@ -82,11 +82,12 @@ FUNCTION validate-snmp-settings () {
         FOR ($i=0;$i -lt $snmpdef.count;$i++) {
             $snmpsetting = $snmpdef[$i].setting         # Get SNMP setting defined in CSV file
             $snmpvalue = $snmpdef[$i].value             # Get SNMP setting value defined in CSV file
+
+            IF ($check) {
+                Write-Host $snmpsetting": " -NoNewline
+            }
             
             IF ($snmpvalue) {
-                IF ($check) {
-                    Write-Host $snmpsetting": " -NoNewline
-                }
                 IF ($snmpconf.$snmpsetting -eq $snmpvalue -and $check) {
                     Write-Host -BackgroundColor Green "PASS" -ForegroundColor Black
                 } ELSE {
