@@ -97,6 +97,9 @@ Import-Module -Name "$ScriptDirectory\modules\mod-connect-vsphere-server.ps1" -F
 # Function Validating SNMP setting(s) against a vSphere Host
 Import-Module -Name "$ScriptDirectory\modules\mod-validate-snmp-settings.ps1" -Force:$true
 
+# Function Configuring SNMP setting(s) against a vSphere Host
+Import-Module -Name "$ScriptDirectory\modules\mod-configure-snmp-settings.ps1" -Force:$true
+
 # =================================================================================================================================================
 # IF -Help parameter is used - Show Script Usage
 IF ($help -OR (!$check -AND !$set)) {
@@ -128,11 +131,12 @@ IF ($esx) {
       $rc = connect-vsphere-server -esx $esxhost
     }
 
-    # Following Check section will only report on SNMP configuration vs desired state
+    # Following module will check and report the SNMP configuration vs desired state - If check switch is defined, the result will be displayed
+    Clear-Host
     $nonecompliantsettings = validate-snmp-settings -esx $esx -csv $csv
 
     IF ($nonecompliantsettings -and $set) {
-      Write-Host $nonecompliantsettings
+      configure-snmp-settings  -esx $esx -csv $csv -settings $nonecompliantsettings
     }
   }
 } ELSE {
