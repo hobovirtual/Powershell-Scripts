@@ -7,6 +7,8 @@
 
  Although I intend to maintain these as best as i can, the code below may stop working with future release.
  I will provide as much information and comments in this code to guide you.
+ I intend to manage error exception in the best i can, although some exceptions may not be trapped. If you encounter some issue, please let me 
+ know.
 
  =================================================================================================================================================
   Script:	 sec-host-snmp-configuration.ps1
@@ -28,6 +30,17 @@
                     - vSphere 6.7
 
   Above is my test environment, but this may potentially work with older supported versions
+  
+  Only the following settings have been tested
+                    - authentication
+                    - privacy
+                    - hwsrc
+                    - enable
+                    - users
+                        + if you need different passphrase per host, you would need to modify the conf file and run it against individual host
+                          It is possible to modify the code to change configuration file in a loop, at the moment a single definition per cluster
+                          was requested
+  Although the other SNMP settings should work 
  -------------------------------------------------------------------------------------------------------------------------------------------------
   Pre-requisite: Elevated Rights on target ESXi Host
                  Configuration Setting Definition in CSV format (.\config\somefile.csv)
@@ -57,7 +70,9 @@
 #@
 #@  Examples:
 #@
-#@    sec-host-snmp-configuration.ps1 -vc myvc.myorg.org -cl mycluster -check
+#@    sec-host-snmp-configuration.ps1 -vc myvc.myorg.org -cl cluster1,cluster2 -check
+#@    sec-host-snmp-configuration.ps1 -vc myvc.myorg.org -cl cluster1,cluster2 -set
+#@    sec-host-snmp-configuration.ps1 -esx esx1,esx2 -check
 #@    sec-host-snmp-configuration.ps1 -Help
 #@    
 # ================================================================================================================================================
