@@ -123,6 +123,8 @@ IF ($vc) {
   }
 }
 
+Clear-Host
+
 IF ($esx) {
 
   FOREACH ($esxhost in $esx) {
@@ -132,7 +134,6 @@ IF ($esx) {
     }
 
     # Following module will check and report the SNMP configuration vs desired state - If check switch is defined, the result will be displayed
-    Clear-Host
     $nonecompliantsettings = validate-snmp-settings -esx $esx -csv $csv
 
     IF ($nonecompliantsettings -and $set) {

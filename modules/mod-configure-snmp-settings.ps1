@@ -74,8 +74,8 @@ FUNCTION configure-snmp-settings () {
 
         FOREACH ($setting in $settings) {
             # Retrieve the setting value from the SNMP definition
-            $snmpsetting = $snmpdef | where-object setting -eq '$setting'
-            Write-Host $snmpsetting
+            $snmpsetting = $snmpdef | where-object setting -eq $setting
+            Write-Host $setting $snmpsetting
         }
     }
 }
