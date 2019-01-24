@@ -45,7 +45,7 @@
  -------------------------------------------------------------------------------------------------------------------------
 #>
 
-FUNCTION validate-snmp-settings () {
+FUNCTION configure-snmp-settings () {
 
 	#------------------------------------------#
 	# Module Input Parameter(s)
@@ -71,6 +71,11 @@ FUNCTION validate-snmp-settings () {
     $esxcli = Get-EsxCli -VMHost $esx -V2
 
     IF ($esxcli) {
-        
+
+        FOREACH ($setting in $settings) {
+            # Retrieve the setting value from the SNMP definition
+            $snmpsetting = $snmpdef | where-object setting -eq '$setting'
+            Write-Host $snmpsetting
+        }
     }
 }
