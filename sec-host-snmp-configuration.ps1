@@ -135,7 +135,7 @@ IF ($esx) {
 
     # Following module will check and report the SNMP configuration vs desired state - If check switch is defined, the result will be displayed
     $nonecompliantsettings = validate-snmp-settings -esx $esxhost -csv $csv
-Write-Host $nonecompliantsettings.count
+
     IF ($nonecompliantsettings -and $set) {
       FOREACH ($setting in $nonecompliantsettings) {
         configure-snmp-settings  -esx $esxhost -csv $csv -setting $setting

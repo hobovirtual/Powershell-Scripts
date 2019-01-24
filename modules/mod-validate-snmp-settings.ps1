@@ -84,7 +84,7 @@ FUNCTION validate-snmp-settings () {
             $snmpvalue = $snmpdef[$i].value             # Get SNMP setting value defined in CSV file
             
             IF ($snmpvalue) {
-                IF ($snmpconf.$snmpsetting -eq $snmpvalue -and $check) {
+                IF ($snmpconf.$snmpsetting -eq $snmpvalue) {
                     $result = "PASS"
                 } ELSE {
                     $result = "FAIL"
