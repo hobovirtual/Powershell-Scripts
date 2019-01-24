@@ -123,8 +123,6 @@ IF ($vc) {
   }
 }
 
-Clear-Host
-
 IF ($esx) {
 
   FOREACH ($esxhost in $esx) {
