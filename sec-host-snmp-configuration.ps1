@@ -18,8 +18,8 @@
   -------------------------------------------------
   Updates     
   -------------------------------------------------
-  YYYY/MM/DD  by ?
-              Comments
+  2019/01/24  by Christian Renaud
+              Initial Release after series of QA performed
  =================================================================================================================================================
   Description: This Script will use esxcli commands to secure and configure SNMP as per best practices and aligned with
                VMware Security Guide for vSphere 6.5+	
@@ -41,7 +41,7 @@
                           It is possible to modify the code to change configuration file in a loop, the intention was to provide a definition 
                           per cluster
 
-  Although the other SNMP settings should work 
+  Although the other SNMP settings should work, only the above were tested sucessfully. 
  -------------------------------------------------------------------------------------------------------------------------------------------------
   Pre-requisite: Elevated Rights on target ESXi Host
                  Configuration Setting Definition in CSV format (.\config\somefile.csv)
@@ -51,15 +51,17 @@
 # Help Section
 # ================================================================================================================================================
 #@  Description: 
+#@
+#@    This Script can be used to validated and/or configure SNMP settings on vSphere Host(s)
+#@    All interaction is done via esxcli commands
+#@    Please make sure to grab all required module(s) and configuration file(s) before executing the script
+#@    SNMP desired configuration(s) are defined in a CSV format in the /conf/snmp-config.csv file
 #@    
 #@  Usage:
 #@
 #@    sec-host-snmp-configuration.ps1 .... [ Common Parameters ]
 #@
 #@  Paramaters:
-#@
-#@
-#@  Mandatory parameter(s):
 #@
 #@    [ -vc ]       : virtual Center
 #@    [ -cl ]       : vSphere Cluster

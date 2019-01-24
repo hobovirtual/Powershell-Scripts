@@ -18,8 +18,8 @@
   -------------------------------------------------
   Updates     
   -------------------------------------------------
-  YYYY/MM/DD  by someone
-  
+  2019/01/24  by Christian Renaud
+              Initial Release after series of QA performed  
  ==========================================================================================================================
  Description:	This Module will validate the SNMP configuration on a given host. The settings must be defined in a CSV
                 file and must be valid
