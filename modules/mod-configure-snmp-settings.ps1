@@ -75,7 +75,7 @@ FUNCTION configure-snmp-settings () {
         $snmpvalue = ($snmpdef | where-object setting -eq $setting).value
         Write-Host "Configuring SNMP setting(s) on $esx $tab"
 
-        IF ($snmpsetting -ne "users") {
+        IF ($setting -ne "users") {
             $rc = $esxcli.system.snmp.set.Invoke(@{$setting = $snmpvalue})
         } ELSE {
             # Generate auth-hash and priv-hash
