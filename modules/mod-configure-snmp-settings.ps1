@@ -54,7 +54,7 @@ FUNCTION configure-snmp-settings () {
 	PARAM(
 		[String]$esx,
         [String]$csv,
-        [String[]]$settings
+        [String]$setting
 	)
 
 	#------------------------------------------#
@@ -72,27 +72,22 @@ FUNCTION configure-snmp-settings () {
     $esxcli = Get-EsxCli -VMHost $esx -V2
 
     IF ($esxcli) {
+        # Retrieve the setting value from the SNMP definition
+        $snmpvalue = ($snmpdef | where-object setting -eq $setting).value
+        Write-Host "Configuring SNMP setting $setting on $esx $tab" -NoNewline
 
-        FOREACH ($setting in $settings) {
-            # Retrieve the setting value from the SNMP definition
-            $snmpvalue = ($snmpdef | where-object setting -eq $setting).value
-            Write-Host "Configuring SNMP setting $setting on $esx $tab" -NoNewline
+        IF ($snmpvalue) {
+            $rc = $esxcli.system.snmp.set.Invoke(@{$setting = $snmpvalue})
+        } ELSE {
+            # Generate auth-hash and priv-hash
+            $hash = $esxcli.system.snmp.hash.Invoke(@{authhash = "passphrase"; privhash = "passphrase"; rawsecret = "true"})
+            $rc = $esxcli.system.snmp.set.Invoke(@{$setting = "username/$($hash.authhash)/$($hash.privhash)/priv"})
+        }
 
-            IF ($snmpvalue) {
-                $rc = $esxcli.system.snmp.set.Invoke(@{$setting = $snmpvalue})
-
-                IF ($rc) {
-                    Write-Host -BackgroundColor Green "SUCCESS" -ForegroundColor Black
-                } ELSE {
-                    Write-Host -BackgroundColor Red "FAILED"
-                }
-            } ELSE {
-                # Generate auth-hash and priv-hash
-                $hash = $esxcli.system.snmp.hash.Invoke(@{authhash = "passphrase"; privhash = "passphrase"; rawsecret = "true"})
-                Write-Host $hash
-                Write-Host "username/$($hash.authhash)/$($hash.privhash)/priv"
-                #$rc = $esxcli.system.snmp.set.Invoke(@{$setting = "username/$($hash.authhash)/$($hash.privhash)/priv"})
-            }
+        IF ($rc) {
+            Write-Host -BackgroundColor Green "SUCCESS" -ForegroundColor Black
+        } ELSE {
+            Write-Host -BackgroundColor Red "FAILED"
         }
     }
 }
