@@ -147,4 +147,4 @@ IF ($esx) {
 }
 
 # Disconnect from vCenter Server
-#Disconnect-VIServer * -Force:$true -Confirm:$false
+Disconnect-VIServer * -Force:$true -Confirm:$false
