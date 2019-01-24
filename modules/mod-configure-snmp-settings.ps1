@@ -79,7 +79,7 @@ FUNCTION configure-snmp-settings () {
             $rc = $esxcli.system.snmp.set.Invoke(@{$setting = $snmpvalue})
         } ELSE {
             # Generate auth-hash and priv-hash
-            $hash = $esxcli.system.snmp.hash.Invoke(@{authhash = $snmpvalue; privhash = $snmpvalue; rawsecret = "true"})
+            $hash = $esxcli.system.snmp.hash.Invoke(@{authhash = "$snmpvalue"; privhash = "$snmpvalue"; rawsecret = "true"})
             $rc = $esxcli.system.snmp.set.Invoke(@{$setting = "username/$($hash.authhash)/$($hash.privhash)/priv"})
         }
 
