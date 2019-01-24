@@ -62,6 +62,7 @@ FUNCTION configure-snmp-settings () {
 	#------------------------------------------#
 
     $snmpdef = Import-Csv $csv                 # Import the Desired Configuration State Stored in a CSV file
+    $tab = [char]9
 
 	#------------------------------------------#
 	# Module Action(s)
@@ -75,10 +76,22 @@ FUNCTION configure-snmp-settings () {
         FOREACH ($setting in $settings) {
             # Retrieve the setting value from the SNMP definition
             $snmpvalue = ($snmpdef | where-object setting -eq $setting).value
-            Write-Host "Applying $setting on $esx"
+            Write-Host "Configuring SNMP setting $setting on $esx $tab" -NoNewline
 
             IF ($snmpvalue) {
-                $esxcli.system.snmp.set.Invoke(@{$setting = $snmpvalue})
+                $rc = $esxcli.system.snmp.set.Invoke(@{$setting = $snmpvalue})
+
+                IF ($rc) {
+                    Write-Host -BackgroundColor Green "SUCCESS" -ForegroundColor Black
+                } ELSE {
+                    Write-Host -BackgroundColor Red "FAILED"
+                }
+            } ELSE {
+                # Generate auth-hash and priv-hash
+                $hash = $esxcli.system.snmp.hash("passphrase","passphrase",$true)
+                Write-Host $hash
+                Write-Host "username/$hash.authhash/$hash.privhash/priv"
+                #$rc = $esxcli.system.snmp.set.Invoke(@{$setting = "username/$hash.authhash/$hash.privhash/priv"})
             }
         }
     }

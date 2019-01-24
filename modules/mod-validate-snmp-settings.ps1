@@ -84,7 +84,7 @@ FUNCTION validate-snmp-settings () {
             $snmpvalue = $snmpdef[$i].value             # Get SNMP setting value defined in CSV file
 
             IF ($check) {
-                Write-Host $snmpsetting": "$tab -NoNewline
+                Write-Host $snmpsetting": " -NoNewline
             }
             
             IF ($snmpvalue) {
