@@ -38,8 +38,9 @@
                     - enable
                     - users
                         + if you need different passphrase per host, you would need to modify the conf file and run it against individual host
-                          It is possible to modify the code to change configuration file in a loop, at the moment a single definition per cluster
-                          was requested
+                          It is possible to modify the code to change configuration file in a loop, the intention was to provide a definition 
+                          per cluster
+
   Although the other SNMP settings should work 
  -------------------------------------------------------------------------------------------------------------------------------------------------
   Pre-requisite: Elevated Rights on target ESXi Host
