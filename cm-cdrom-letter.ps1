@@ -85,15 +85,16 @@ $ScriptFullPath = Split-Path $myInvocation.MyCommand.Path -Leaf   # Script Full 
 Import-Module -Name "$ScriptDirectory\modules\mod-show-usage.ps1" -Force:$true
 
 # =================================================================================================================================================
-# IF -Help parameter is used - Show Script Usage
-IF ($help -OR (!$check -AND !$set)) {
+
+# if -help parameter is provided or if required parameter(s) are missing(s) - Show Script Usage
+IF ($help -OR $target -OR !$letter)  {
   Show-Usage -ScriptFullPath $ScriptFullPath
   EXIT
 } 
 
 # Parameters Input Validation - If vCenter > Build list of esxi hosts
 IF ($target -AND $letter) {
-  Invoke-Command -ComputerName $target -ScriptBlock {
+  Invoke-Command -ComputerName $target -Credential $credentials -ScriptBlock {
     $cdrom = Get-WmiObject win32_volume -filter 'DriveType = "5"'
     $cdrom.DriveLetter = $USING:letter+":"
     $cdrom.Put()

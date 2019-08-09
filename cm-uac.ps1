@@ -77,7 +77,7 @@ PARAM (
 # Local Variables Definition
 # ----------------------------------------------- #
 
-$ScriptDirectory = Split-Path $myInvocation.MyCommand.Path        # Script Full Directory Path (running from) ex: C:\temp\
+$ScriptDirectory = "C:\Library"                                   # Script Full Directory Path (running from) ex: C:\temp\
 $ScriptFullPath = Split-Path $myInvocation.MyCommand.Path -Leaf   # Script Full Path with name ex: C:\temp\myscript.ps1
 
 # ----------------------------------------------- #
@@ -88,20 +88,21 @@ $ScriptFullPath = Split-Path $myInvocation.MyCommand.Path -Leaf   # Script Full 
 Import-Module -Name "$ScriptDirectory\modules\mod-show-usage.ps1" -Force:$true
 
 # =================================================================================================================================================
-# IF -Help parameter is used - Show Script Usage
-IF ($help -OR (!$check -AND !$set)) {
+
+# if -help parameter is provided or if required parameter(s) are missing(s) - Show Script Usage
+IF ($help -OR $target -OR (!$enable -AND !$disable)))  {
   Show-Usage -ScriptFullPath $ScriptFullPath
   EXIT
 } 
 
-# Parameters Input Validation - If vCenter > Build list of esxi hosts
-IF ($target -AND $enable) {
-  Invoke-Command -ComputerName $target -ScriptBlock {
-    New-ItemProperty -Path HKLM:Software\Microsoft\Windows\CurrentVersion\policies\system -Name EnableLUA -PropertyType DWord -Value 1 -Force
+IF ($target) {
+  IF ($disable) {
+    $dwordvalue = "0"
+  } ELSEIF ($enable) {
+    $dwordvalue = "1"
   }
-} ELSE IF ($target -AND $disable) {
   Invoke-Command -ComputerName $target -ScriptBlock {
-    New-ItemProperty -Path HKLM:Software\Microsoft\Windows\CurrentVersion\policies\system -Name EnableLUA -PropertyType DWord -Value 0 -Force
+    New-ItemProperty -Path HKLM:Software\Microsoft\Windows\CurrentVersion\policies\system -Name EnableLUA -PropertyType DWord -Value $USING:dwordvalue -Force
   }
 } ELSE {
   Write-Error "One or more parameters are missing or incorrect, please validate script input(s)"
