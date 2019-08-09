@@ -21,8 +21,7 @@
   YYYY/MM/DD  by [SOMEONE]
               [DESCRIPTION]
  =================================================================================================================================================
-  Description:  This script will remotely change the CD-Rom letter on a given system
-                This script will be mainly used on a PowerShell and require WinRM to be configured
+  Description:  This script will remotely change the CD-Rom letter on a given Windows system
  -------------------------------------------------------------------------------------------------------------------------------------------------
   Test Environment:	- PowerShell 5.1.17134.407
 					          - Windows 2016 Server
@@ -30,6 +29,15 @@
   Above is my test environment, but this may potentially work with other supported versions
  -------------------------------------------------------------------------------------------------------------------------------------------------
   Pre-requisite: Elevated Rights on local powershell host and target server
+
+                 Encrypted / exported credential object available for the user running the command on the powershell host, you can find more 
+                 information on how to create this here: 
+                 https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/export-clixml?view=powershell-6
+
+                 Modify the following variables
+                  ScriptDirectory
+                  ScriptFullPath
+                  If the password is located somewhere else than the default ScriptDirectory\Access
  =================================================================================================================================================
 #>
 # ================================================================================================================================================
@@ -77,8 +85,8 @@ PARAM (
 # Local Variables Definition
 # ----------------------------------------------- #
 
-$ScriptDirectory = "C:\Library\"                                  # Script Full Directory Path (running from) ex: C:\temp\
-$ScriptFullPath = Split-Path $myInvocation.MyCommand.Path -Leaf   # Script Full Path with name ex: C:\temp\myscript.ps1
+$ScriptDirectory = "C:\Library"                   # Script Full Directory Path (running from) ex: C:\temp\
+$ScriptFullPath = "C:\Library\cm-uac.ps1"         # Script Full Path with name ex: C:\temp\myscript.ps1
 
 # ----------------------------------------------- #
 # Modules Import
@@ -90,18 +98,20 @@ Import-Module -Name "$ScriptDirectory\modules\mod-show-usage.ps1" -Force:$true
 # =================================================================================================================================================
 
 # if -help parameter is provided or if required parameter(s) are missing(s) - Show Script Usage
-IF ($help -OR $target -OR (!$enable -AND !$disable)))  {
+IF ($help -OR !$target -AND (!$enable -OR !$disable))  {
   Show-Usage -ScriptFullPath $ScriptFullPath
   EXIT
 } 
 
+IF ($disable) {
+  $dwordvalue = "0"
+} ELSEIF ($enable) {
+  $dwordvalue = "1"
+}
+
 IF ($target) {
-  IF ($disable) {
-    $dwordvalue = "0"
-  } ELSEIF ($enable) {
-    $dwordvalue = "1"
-  }
-  Invoke-Command -ComputerName $target -ScriptBlock {
+  $creds = Import-CliXml -Path $ScriptDirectory"\Access\service-account.xml"
+  Invoke-Command -ComputerName $target -Credential $creds -ScriptBlock {
     New-ItemProperty -Path HKLM:Software\Microsoft\Windows\CurrentVersion\policies\system -Name EnableLUA -PropertyType DWord -Value $USING:dwordvalue -Force
   }
 } ELSE {
