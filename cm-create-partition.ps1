@@ -11,7 +11,7 @@
  know.
 
  =================================================================================================================================================
-  Script:	 cm-uac.ps1
+  Script:	 cm-create-partition.ps1
  =================================================================================================================================================
   Author:  Christian Renaud
   Date:    2019/08/08
@@ -21,7 +21,7 @@
   YYYY/MM/DD  by [SOMEONE]
               [DESCRIPTION]
  =================================================================================================================================================
-  Description:  This script will remotely change the CD-Rom letter on a given Windows system
+  Description:  This script will remotely configure windows partition on a given Windows system
  -------------------------------------------------------------------------------------------------------------------------------------------------
   Test Environment:	- PowerShell 5.1.17134.407
 					          - Windows 2016 Server
@@ -45,28 +45,30 @@
 # ================================================================================================================================================
 #@  Description: 
 #@
-#@    This Script can be used to enable or disable UAC on a windows server
+#@    This Script can be used to configure partition on a windows server
 #@    All interactions are done remotely via winrm
 #@    Please make sure that all requirements have been met to sucessfully run this script
 #@    
 #@  Usage:
 #@
-#@    cm-uac.ps1 .... [ Common Parameters ]
+#@    cm-create-partition.ps1 .... [ Common Parameters ]
 #@
 #@  Paramaters:
 #@
-#@    [ -target ]   : target windows server [FQDN|IP]
-#@    [ -enable ]   : enable UAC
-#@    [ -disable ]  : disable UAC
+#@    [ -target ]     : target windows server [FQDN|IP]
+#@    [ -disknumber ] : Physical Disk Number
+#@    [ -letter ]     : Partition Desired Letter
+#@    [ -unitsize ]   : OPTIONAL - Partition Allocation Size (bytes)
+#@    [ -label ]      : OPTIONAL - Partition Label
 #@
 #@  Common Parameters
 #@    [ -help ]     : Display help
 #@
 #@  Examples:
 #@
-#@    cm-uac.ps1 -target myserver.myorg.org -enable
-#@    cm-uac.ps1 -target myserver.myorg.org -disable
-#@    cm-uac.ps1 -help
+#@    cm-create-partition.ps1 -target myserver.myorg.org -disknumber 1 -letter D -label "Drive D" -unitsize 65536
+#@    cm-create-partition.ps1 -target myserver.myorg.org -disknumber 1 -letter E
+#@    cm-create-partition.ps1 -help
 #@    
 # ================================================================================================================================================
 
@@ -76,8 +78,10 @@
 
 param ( 
   [string]$target,                                # string - windows server FQDN or IP
-  [switch]$enable,                                # switch - enable windows UAC
-  [switch]$disable,                               # switch - disable windows UAC
+  [int]$disknumber,                               # int - disk number on windows system
+  [string]$letter,                                # string - drive letter
+  [int]$unitsize,                                 # int - allocation unit (bytes)
+  [string]$label,                                 # string - partition label
   [switch]$help                                   # Switch - Display Help with Comment Prefix #@ 
 )
 
@@ -85,8 +89,8 @@ param (
 # Local Variables Definition
 # ----------------------------------------------- #
 
-$ScriptDirectory = "C:\Library"                   # Script Full Directory Path (running from) ex: C:\temp\
-$ScriptFullPath = "C:\Library\cm-uac.ps1"         # Script Full Path with name ex: C:\temp\myscript.ps1
+$ScriptDirectory = "C:\Library"                           # Script Full Directory Path (running from) ex: C:\temp\
+$ScriptFullPath = "C:\Library\cm-create-partition.ps1"    # Script Full Path with name ex: C:\temp\myscript.ps1
 
 # ----------------------------------------------- #
 # Modules Import
@@ -98,18 +102,25 @@ Import-Module -Name "$ScriptDirectory\modules\mod-show-usage.ps1" -Force:$true
 # =================================================================================================================================================
 
 # if -help parameter is provided or if required parameter(s) are missing(s) - Show Script Usage
-if ($help -OR !$target -AND (!$enable -OR !$disable))  {
+if ($help -OR !$target -OR !$disknumber -OR !$letter)  {
   Show-Usage -ScriptFullPath $ScriptFullPath
   exit
 } 
 
-if ($disable) {
-  $dwordvalue = "0"
-} elseif ($enable) {
-  $dwordvalue = "1"
-}
-
 $creds = Import-CliXml -Path $ScriptDirectory"\Access\service-account.xml"
 Invoke-Command -ComputerName $target -Credential $creds -ScriptBlock {
-  New-ItemProperty -Path HKLM:Software\Microsoft\Windows\CurrentVersion\policies\system -Name EnableLUA -PropertyType DWord -Value $USING:dwordvalue -Force
+  # Initialize Disk
+  if (Get-Disk -Number $USING:disknumber | Where-Object PartitionStyle –Eq 'RAW') {
+    Get-Disk -Number $USING:disknumber | Where-Object PartitionStyle –Eq 'RAW' | Initialize-Disk
+  }
+  # Create Partition
+  if (-not ((Get-Disk -Number $USING:disknumber | Get-Partition).DriveLetter)) {
+    if ($USING:unitsize) {
+      Get-Disk -Number $USING:disknumber | New-Partition -UseMaximumSize -DriveLetter $USING:letter | Format-Volume -FileSystem NTFS -AllocationUnitSize $USING:unitsize -NewFileSystemLabel $USING:label -Confirm:$False
+    } else {
+      Get-Disk -Number $USING:disknumber | New-Partition -UseMaximumSize -DriveLetter $USING:letter | Format-Volume -FileSystem NTFS -NewFileSystemLabel $USING:label -Confirm:$False
+    }
+  } else {
+    Write-Error "Disk already contains a partition, please validate"
+  }
 }

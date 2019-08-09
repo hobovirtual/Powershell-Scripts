@@ -72,7 +72,7 @@
 # Parameters Definition
 # ----------------------------------------------- #
 
-PARAM ( 
+param ( 
   [string]$target,                                # String - windows server FQDN or IP
   [string]$letter,                                # String - CD-ROM letter
   [switch]$help                                   # Switch - Display Help with Comment Prefix #@ 
@@ -95,19 +95,14 @@ Import-Module -Name "$ScriptDirectory\modules\mod-show-usage.ps1" -Force:$true
 # =================================================================================================================================================
 
 # if -help parameter is provided or if required parameter(s) are missing(s) - Show Script Usage
-IF ($help -OR $target -OR !$letter)  {
+if ($help -OR $target -OR !$letter)  {
   Show-Usage -ScriptFullPath $ScriptFullPath
-  EXIT
+  exit
 } 
 
-# Parameters Input Validation - If vCenter > Build list of esxi hosts
-IF ($target -AND $letter) {
-  $creds = Import-CliXml -Path $ScriptDirectory"\Access\service-account.xml"
-  Invoke-Command -ComputerName $target -Credential $creds -ScriptBlock {
-    $cdrom = Get-WmiObject win32_volume -filter 'DriveType = "5"'
-    $cdrom.DriveLetter = $USING:letter+":"
-    $cdrom.Put()
-  }
-} ELSE {
-  Write-Error "One or more parameters are missing or incorrect, please validate script input(s)"
+$creds = Import-CliXml -Path $ScriptDirectory"\Access\service-account.xml"
+Invoke-Command -ComputerName $target -Credential $creds -ScriptBlock {
+  $cdrom = Get-WmiObject win32_volume -filter 'DriveType = "5"'
+  $cdrom.DriveLetter = $USING:letter+":"
+  $cdrom.Put()
 }

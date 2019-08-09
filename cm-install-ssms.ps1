@@ -11,7 +11,7 @@
  know.
 
  =================================================================================================================================================
-  Script:	 cm-uac.ps1
+  Script:	 cm-install-ssms.ps1
  =================================================================================================================================================
   Author:  Christian Renaud
   Date:    2019/08/08
@@ -21,7 +21,7 @@
   YYYY/MM/DD  by [SOMEONE]
               [DESCRIPTION]
  =================================================================================================================================================
-  Description:  This script will remotely change the CD-Rom letter on a given Windows system
+  Description:  This script will remotely install Microsoft SQL Management Studio on a given Windows system
  -------------------------------------------------------------------------------------------------------------------------------------------------
   Test Environment:	- PowerShell 5.1.17134.407
 					          - Windows 2016 Server
@@ -38,6 +38,8 @@
                   ScriptDirectory
                   ScriptFullPath
                   If the password is located somewhere else than the default ScriptDirectory\Access
+                
+                 SSMS source must be available in the share provided
  =================================================================================================================================================
 #>
 # ================================================================================================================================================
@@ -45,28 +47,26 @@
 # ================================================================================================================================================
 #@  Description: 
 #@
-#@    This Script can be used to enable or disable UAC on a windows server
+#@    This Script can be used to configure partition on a windows server
 #@    All interactions are done remotely via winrm
 #@    Please make sure that all requirements have been met to sucessfully run this script
 #@    
 #@  Usage:
 #@
-#@    cm-uac.ps1 .... [ Common Parameters ]
+#@    cm-install-ssms.ps1 .... [ Common Parameters ]
 #@
 #@  Paramaters:
 #@
-#@    [ -target ]   : target windows server [FQDN|IP]
-#@    [ -enable ]   : enable UAC
-#@    [ -disable ]  : disable UAC
+#@    [ -target ]     : target windows server [FQDN|IP]
+#@    [ -share ]      : 
 #@
 #@  Common Parameters
 #@    [ -help ]     : Display help
 #@
 #@  Examples:
 #@
-#@    cm-uac.ps1 -target myserver.myorg.org -enable
-#@    cm-uac.ps1 -target myserver.myorg.org -disable
-#@    cm-uac.ps1 -help
+#@    cm-install-ssms.ps1 -target myserver.myorg.org -share "\\server\myshare\sql 2017"
+#@    cm-install-ssms.ps1 -help
 #@    
 # ================================================================================================================================================
 
@@ -76,8 +76,7 @@
 
 param ( 
   [string]$target,                                # string - windows server FQDN or IP
-  [switch]$enable,                                # switch - enable windows UAC
-  [switch]$disable,                               # switch - disable windows UAC
+  [string]$share,                                 # string - share drive where SQL sources are location
   [switch]$help                                   # Switch - Display Help with Comment Prefix #@ 
 )
 
@@ -85,8 +84,8 @@ param (
 # Local Variables Definition
 # ----------------------------------------------- #
 
-$ScriptDirectory = "C:\Library"                   # Script Full Directory Path (running from) ex: C:\temp\
-$ScriptFullPath = "C:\Library\cm-uac.ps1"         # Script Full Path with name ex: C:\temp\myscript.ps1
+$ScriptDirectory = "C:\Library"                       # Script Full Directory Path (running from) ex: C:\temp\
+$ScriptFullPath = "C:\Library\cm-install-ssms.ps1"    # Script Full Path with name ex: C:\temp\myscript.ps1
 
 # ----------------------------------------------- #
 # Modules Import
@@ -98,18 +97,14 @@ Import-Module -Name "$ScriptDirectory\modules\mod-show-usage.ps1" -Force:$true
 # =================================================================================================================================================
 
 # if -help parameter is provided or if required parameter(s) are missing(s) - Show Script Usage
-if ($help -OR !$target -AND (!$enable -OR !$disable))  {
+if ($help -OR !$target -OR !$share)  {
   Show-Usage -ScriptFullPath $ScriptFullPath
   exit
 } 
 
-if ($disable) {
-  $dwordvalue = "0"
-} elseif ($enable) {
-  $dwordvalue = "1"
-}
-
+$ssmsinstall = $share"\SSMS-Setup-ENU.exe"
 $creds = Import-CliXml -Path $ScriptDirectory"\Access\service-account.xml"
+
 Invoke-Command -ComputerName $target -Credential $creds -ScriptBlock {
-  New-ItemProperty -Path HKLM:Software\Microsoft\Windows\CurrentVersion\policies\system -Name EnableLUA -PropertyType DWord -Value $USING:dwordvalue -Force
+  Start-Process -FilePath $USING:ssmsinstall -ArgumentList "/install /quiet /norestart" -Verb RunAs -Wait -WindowStyle Hidden
 }
