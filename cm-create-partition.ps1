@@ -111,7 +111,7 @@ $creds = Import-CliXml -Path $ScriptDirectory"\Access\service-account.xml"
 Invoke-Command -ComputerName $target -Credential $creds -ScriptBlock {
   # Initialize Disk
   if (Get-Disk -Number $USING:disknumber | Where-Object PartitionStyle –Eq 'RAW') {
-    Get-Disk -Number $USING:disknumber | Where-Object PartitionStyle –Eq 'RAW' | Initialize-Disk
+    Get-Disk -Number $USING:disknumber | Initialize-Disk
   }
   # Create Partition
   if (-not ((Get-Disk -Number $USING:disknumber | Get-Partition).DriveLetter)) {
