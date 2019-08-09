@@ -77,7 +77,7 @@ PARAM (
 # Local Variables Definition
 # ----------------------------------------------- #
 
-$ScriptDirectory = "C:\Library"                                   # Script Full Directory Path (running from) ex: C:\temp\
+$ScriptDirectory = "C:\Library\"                                  # Script Full Directory Path (running from) ex: C:\temp\
 $ScriptFullPath = Split-Path $myInvocation.MyCommand.Path -Leaf   # Script Full Path with name ex: C:\temp\myscript.ps1
 
 # ----------------------------------------------- #
