@@ -105,13 +105,38 @@ if ($help -OR !$target -OR !$sapassword -OR !$share)  {
   exit
 } 
 
-$sqlinstall = $share"\setup.exe"
-$sqlanswerfile = $share"\ConfigurationFile.ini"
-$sqlinstallargs =  @()
-$sqlinstallargs += '/SAPWD='+$sapassword
-$sqlinstallargs += '/CONFIGURATIONFILE="'+$sqlanswerfile+'"'
+# Import Session Credentials
 $creds = Import-CliXml -Path $ScriptDirectory"\Access\service-account.xml"
 
+# Copy Source to Local Server
+$session = New-PSSession -ComputerName $target -Credential $creds
+Copy-Item $share -Destination "C:\Temp\SQL" -Recurse -ToSession $session
+
+# SQL Installation Variables Definition
+$sqlinstall = "C:\Temp\SQL\setup.exe"
+$sqlanswerfile = "C:\Temp\SQL\ConfigurationFile.ini"
+$sqlinstallargs =  @()
+$sqlinstallargs += '/SAPWD='+$sapassword
+$sqlinstallargs += '/CONFIGURATIONFILE='+$sqlanswerfile
+
 Invoke-Command -ComputerName $target -Credential $creds -ScriptBlock {
+  # validate if enable local backup of the MasterKey is allowed
+  $registryPath = "HKLM:\SOFTWARE\Microsoft\Cryptography\Protect\Providers\df9d8cd0-1501-11d1-8c7a-00c04fc297eb"
+  $key = "ProtectionPolicy"
+  
+  if (Get-ItemProperty -Path $registryPath) {
+    $regcontent = Get-ItemProperty -Path $registryPath
+    if ($regcontent.$key -ne 1) {
+      Set-ItemProperty -Path $registryPath -Name $key -Value 1 -Force | Out-Null
+    }
+  } else {
+    New-ItemProperty -Path $registryPath -Name $key -Value 1 -PropertyType DWORD -Force | Out-Null
+  }
+  # Installation
   Start-Process -FilePath $USING:sqlinstall -ArgumentList $USING:sqlinstallargs -Verb RunAs -Wait -WindowStyle Hidden
+
+  # Delete Source if successful
+  if ($?) {
+    Remove-Item "C:\Temp" -Force -Recurse -Confirm:$false
+  }
 }

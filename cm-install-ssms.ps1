@@ -102,9 +102,18 @@ if ($help -OR !$target -OR !$share)  {
   exit
 } 
 
-$ssmsinstall = $share"\SSMS-Setup-ENU.exe"
+# Import Session Credentials
 $creds = Import-CliXml -Path $ScriptDirectory"\Access\service-account.xml"
+
+# Copy Source to Local Server
+$session = New-PSSession -ComputerName $target -Credential $creds
+Copy-Item $share -Destination "C:\Temp\SSMS" -Recurse -ToSession $session
+
+$ssmsinstall = "C:\Temp\SSMS\SSMS-Setup-ENU.exe"
 
 Invoke-Command -ComputerName $target -Credential $creds -ScriptBlock {
   Start-Process -FilePath $USING:ssmsinstall -ArgumentList "/install /quiet /norestart" -Verb RunAs -Wait -WindowStyle Hidden
+  if ($?) {
+    Remove-Item "C:\Temp" -Force -Recurse -Confirm:$false
+  }
 }
