@@ -94,8 +94,11 @@ Import-Module -Name "$ScriptDirectory\modules\mod-show-usage.ps1" -Force:$true
 # Function to Connect to vCenter or vSphere Host
 Import-Module -Name "$ScriptDirectory\modules\mod-connect-vsphere-server.ps1" -Force:$true
 
-# Function putting vSphere host in maintenance
+# Function that will enter vSphere host in maintenance
 Import-Module -Name "$ScriptDirectory\modules\mod-host-enter-maintenance.ps1" -Force:$true
+
+# Function to remove maintenance on vSphere host
+Import-Module -Name "$ScriptDirectory\modules\mod-host-exit-maintenance.ps1" -Force:$true
 
 # =================================================================================================================================================
 if ($help -or (!$vc -and !$esx)) {
@@ -141,6 +144,20 @@ if ($vc) {
 
             # Apply Baseline to ESXi Host
             $rc = Update-Entity -Entity $esx -Baseline $baseline -HostFailureAction Retry -HostNumberOfRetries 2 -HostDisableMediaDevices $true -WhatIf
+
+            if ($rc) {
+                # Validate NSX vib installation
+                $esxcli = Get-EsxCli -VMHost $esx -V2
+                $vib = $esxcli.software.vib.list.Invoke() | where {$_.ID -like "*esx-nsxv*"}
+
+                if (($vib.Version).StartsWith("6.7.0")) {
+                    if ($ntnx) {
+                        $isinmaint = host-exit-maintenance -esx $esx -ntnx
+                    } else {
+                        $isinmaint = host-exit-maintenance -esx $esx 
+                    }        
+                }
+            }
 
         } else {
             Write-Host -Background Green -Foreground White "Host build number is matching the baseline provided......Nothing to do!!"

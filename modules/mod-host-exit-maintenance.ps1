@@ -11,7 +11,7 @@
  issue, please let me know.
 
  ==========================================================================================================================
- Module:		mod-host-enter-maintenance.ps1
+ Module:		mod-host-exit-maintenance.ps1
  ==========================================================================================================================
   Author:  Christian Renaud
   Date:    2019/11/04
@@ -21,8 +21,8 @@
   YYYY/MM/DD  by [SOMEONE]
               [DESCRIPTION]
  ==========================================================================================================================
- Description:	This Module will put a given host into maintenance
-                For Nutanix host, the CVM will shutdown properly at the end
+ Description:	This Module will remove a given host from maintenance
+                For Nutanix host, the CVM will be started
  -------------------------------------------------------------------------------------------------------------------------
  Test Environment:	PowerShell XYZ
 					PowerCli Module XYZ
@@ -47,7 +47,7 @@
  -------------------------------------------------------------------------------------------------------------------------
 #>
 
-FUNCTION host-enter-maintenance () {
+FUNCTION host-exit-maintenance () {
 
 	#------------------------------------------#
 	# Module Input Parameter(s)
@@ -62,29 +62,16 @@ FUNCTION host-enter-maintenance () {
 	# Module Action(s)
 	#------------------------------------------#
 
-    # Put ESXi Host in Maintenance
-    Set-VMHost -VMHost $esx -State Maintenance -Confirm:$false -RunAsync
+    # Remove ESXi Host from Maintenance
+    Set-VMHost -VMHost $esx -State Connected -Confirm:$false
 
     # Validate Host State - Must be in maintenance mode - exception for Nutanix, last poweredon is the CVM that will be poweredoff as per Nutanix Bible
-    while ((Get-VMHost -Name $esx).ConnectionState -ne "Maintenance") {
-        Write-Host "Waiting for host to enter maintenance mode"
-        Start-Sleep 45
-
-        if ($ntnx) {
-            # Validating VM count - Last powered on VM should be the CVM
-            if ((Get-VMHost -Name $esx | Get-VM | Where-Object {$_.powerstate -eq 'PoweredOn'}).count -eq 1) {
-                if ((Get-VMHost -Name $esx | Get-VM).Name.StartsWith("NTNX")) {
-                    $cvm = (Get-VMHost -Name $esx | Get-VM).Name.StartsWith("NTNX")
-                    # Shutting down CVM
-                    Write-Host "Shutting down CVM $cvm.Name"
-                    $sshsession = New-SSHSession -Computername $cvm.Guest.IPAddress[0] -Credential (Get-Credential)
-                    $sshstream = New-SSHShellStream -Session $sshsession
-                    $sshstream.WriteLine("/usr/local/nutanix/cluster/bin/cvm_shutdown -P now")
-                    while ($cvm.powerstate -ne 'PoweredOff') {
-                        Write-Host "Waiting for CVM shutdown"
-                        Start-Sleep 30
-                    }
-                } 
+    if ($ntnx) {
+        if ((Get-VMHost -Name $esx).ConnectionState -eq "Connected") {
+            $cvm = (Get-VMHost -Name $esx | Get-VM).Name.StartsWith("NTNX")
+            if ($cvm) {
+                # Power On CVM
+                Start-VM -VM $cvm -Confirm:$false
             }
         }
     }
