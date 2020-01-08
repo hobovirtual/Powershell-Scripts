@@ -124,55 +124,53 @@ if ($dnssvr) {
     $reversefound = $true
     Write-Warning "reverse dns record for ip $ip found"
   }
-
   # validate forward dns record
   if ((Resolve-DnsName "$name.$zone" -ErrorAction silentlycontinue)) {
     $forwardrecord = $true
     Write-Warning "forward dns record for $name found"
   }
-
   # create dns record
   if ($reversefound -eq $false -and $forwardrecord -eq $false) {
-    Write-Host "no previous/stale dns record found, creating dns record as requested"
-    Add-DnsServerResourceRecordA $dnszone -Name $name -IPv4Address $ip -CreatePtr -ComputerName $dnsserver 
-  
-  } elseif ($reversefound -eq $true) {
-    Write-Host "a reverse dns record was found, running validation on this record" -ForegroundColor Blue
+    Write-Host "no previous/stale dns record found, creating dns record as requested" -ForegroundColor Green
+    Add-DnsServerResourceRecordA $dnszone -Name $name -IPv4Address $ip -CreatePtr -ComputerName $dnsserver  
+  } else {
+    if ($reversefound -eq $true) {
+    Write-Host "a reverse dns record was found, running validation on this record" -ForegroundColor DarkGray
+      # validate if the current reverse record match the requested forward record
+      if ((Resolve-DnsName $ip -Server $dnssvr).NameHost.Split(".")[0] -ieq $name) {
+        Write-Host "the reverse dns record found match the requested forward record" -ForegroundColor Green
+        
+        if ($forwardrecord -eq $false) {
+          Write-Host "forward record missing....proceeding with the creation of the missing record"
+          Add-DnsServerResourceRecordA $dnszone -Name $name -IPv4Address $ip -ComputerName $dnssvr
+        }
 
-    # validate if the current reverse record match the requested forward record
-    if ((Resolve-DnsName $ip -Server $dnssvr).NameHost.Split(".")[0] -ieq $name) {
-      Write-Host "the reverse dns record found match the requested forward record" -ForegroundColor Green
-      
-      if ($forwardrecord -eq $false) {
-        Write-Host "forward record missing....proceeding with the creation of the missing record"
-        Add-DnsServerResourceRecordA $dnszone -Name $name -IPv4Address $ip -ComputerName $dnssvr
+      } else {
+        Write-Error "reverse dns record for ip $ip found but doesn't match $name, please contact the sddc team to validate if this record is still valid or not. as per corporate policy this condition will fail a deployment" -ErrorId 2
       }
-
-    } else {
-      Write-Error "reverse dns record for ip $ip found, please validate if this record is still valid or not. as per corporate policy, this situation is acceptable and should not fail a deployment"
-      exit 2
-    }
-
-  } elseif ($forwardrecord -eq $true) {
-    Write-Host "a forward dns record was found, running validation on this record" -ForegroundColor Blue
-
-    if ((Resolve-DnsName "$name.$zone").IPAddress -eq $ip) {
-      Write-Host "the forward dns record found match the requested reverse record" -ForegroundColor Green
-      
-      if ($reversefound -eq $false) {
-        Write-Host "reverse record missing....proceeding with the creation of the missing record"
-        # create ptr record
-        $ptr = $ip.split(".")[3]
-        $ptr += "."
-        $ptr += $ip.split(".")[2]
-        $ptrdomain = $name
-        $ptrdomain += "."
-        $ptrdomain += $dnszone
-        Add-DnsServerResourceRecordPtr -Name $ptr -ZoneName $reversezone -PtrDomainName $ptrdomain -ComputerName $dnssvr
+    } 
+    
+    if ($forwardrecord -eq $true) {
+      Write-Host "a forward dns record was found, running validation on this record" -ForegroundColor DarkGray
+      if ((Resolve-DnsName "$name.$zone").IPAddress -eq $ip) {
+        Write-Host "the forward dns record found match the requested reverse record" -ForegroundColor Green
+        
+        if ($reversefound -eq $false) {
+          Write-Host "reverse record missing....proceeding with the creation of the missing record"
+          # create ptr record
+          $ptr = $ip.split(".")[3]
+          $ptr += "."
+          $ptr += $ip.split(".")[2]
+          $ptrdomain = $name
+          $ptrdomain += "."
+          $ptrdomain += $dnszone
+          Add-DnsServerResourceRecordPtr -Name $ptr -ZoneName $reversezone -PtrDomainName $ptrdomain -ComputerName $dnssvr
+        }
+      } else {
+        Write-Error "forward dns record for $name found but doesn't match the ip $ip provided, please contact the sddc team to validate if this record is still valid or not. as per corporate policy this condition will fail a deployment" -ErrorId 4
       }
     }
   }
-
 } else {
   Write-Error "No DNS server(s) was/were available at the time this script ran, please validate DNS server connectivity and/or availability"
 }
