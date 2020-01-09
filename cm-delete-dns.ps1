@@ -11,7 +11,7 @@
  know.
 
  =================================================================================================================================================
-  Script:     cm-create-dns.ps1
+  Script:     cm-delete-dns.ps1
  =================================================================================================================================================
   Author:  Christian Renaud
   Date:    2020/01/06
@@ -21,7 +21,7 @@
   YYYY/MM/DD  by [SOMEONE]
               [DESCRIPTION]
  =================================================================================================================================================
-  Description:  This script will create a forward and it's associated pointer dns record in a given dns zone
+  Description:  This script will delete a forward and it's associated pointer dns record in a given dns zone
  -------------------------------------------------------------------------------------------------------------------------------------------------
   Test Environment:    - PowerShell 5.1.17134.407
                               - Windows 2016 Server
@@ -50,7 +50,7 @@
 #@    
 #@  Usage:
 #@
-#@    cm-create-dns.ps1 .... [ Common Parameters ]
+#@    cm-delete-dns.ps1 .... [ Common Parameters ]
 #@
 #@  Paramaters:
 #@
@@ -63,8 +63,8 @@
 #@
 #@  Examples:
 #@
-#@    cm-create-dns.ps1 -zone zone.local -name server001 -ip 192.168.1.100
-#@    cm-create-dns.ps1 -help
+#@    cm-delete-dns.ps1 -zone zone.local -name server001 -ip 192.168.1.100
+#@    cm-delete-dns.ps1 -help
 #@    
 # ================================================================================================================================================
 
@@ -84,7 +84,7 @@ param (
 # ----------------------------------------------- #
 
 $scriptdirectory = "C:\library\powershell"                     # Script Full Directory Path (running from) ex: C:\temp\
-$scriptfullpath = "C:\library\powershell\cm-create-dns.ps1"    # Script Full Path with name ex: C:\temp\myscript.ps1
+$scriptfullpath = "C:\library\powershell\cm-delete-dns.ps1"    # Script Full Path with name ex: C:\temp\myscript.ps1
 
 # ----------------------------------------------- #
 # Modules Import
@@ -122,53 +122,41 @@ if ($dnssvr) {
   # validate reverse dns record
   if (Resolve-DnsName $ip -Server $dnssvr -ErrorAction silentlycontinue) {
     $reversefound = $true
-    Write-Warning "reverse dns record for ip $ip found"
+    Write-Host "reverse dns record for ip $ip found" -ForegroundColor Green
   }
   # validate forward dns record
   if ((Resolve-DnsName "$name.$zone" -ErrorAction silentlycontinue)) {
     $forwardrecord = $true
-    Write-Warning "forward dns record for $name found"
+    Write-Host "forward dns record for $name found" -ForegroundColor Green
   }
-  # create dns record
-  if ($reversefound -eq $false -and $forwardrecord -eq $false) {
-    Write-Host "no previous/stale dns record found, creating dns record as requested" -ForegroundColor Green
-    Add-DnsServerResourceRecordA $dnszone -Name $name -IPv4Address $ip -CreatePtr -ComputerName $dnsserver  
-  } else {
-    if ($reversefound -eq $true) {
-    Write-Host "a reverse dns record was found, running validation on this record" -ForegroundColor DarkGray
-      # validate if the current reverse record match the requested forward record
-      if ((Resolve-DnsName $ip -Server $dnssvr).NameHost.Split(".")[0] -ieq $name) {
-        Write-Host "the reverse dns record found match the requested forward record" -ForegroundColor Green
-        
-        if ($forwardrecord -eq $false) {
-          Write-Host "forward record missing....proceeding with the creation of the missing record"
-          Add-DnsServerResourceRecordA $dnszone -Name $name -IPv4Address $ip -ComputerName $dnssvr
-        }
-
-      } else {
-        Write-Error "reverse dns record for ip $ip found but doesn't match $name, please contact the sddc team to validate if this record is still valid or not. as per corporate policy this condition will fail a deployment" -ErrorId 2
-      }
-    } 
-    
-    if ($forwardrecord -eq $true) {
-      Write-Host "a forward dns record was found, running validation on this record" -ForegroundColor DarkGray
-      if ((Resolve-DnsName "$name.$zone").IPAddress -eq $ip) {
-        Write-Host "the forward dns record found match the requested reverse record" -ForegroundColor Green
-        
-        if ($reversefound -eq $false) {
-          Write-Host "reverse record missing....proceeding with the creation of the missing record"
-          # create ptr record
-          $ptr = $ip.split(".")[3]
-          $ptr += "."
-          $ptr += $ip.split(".")[2]
-          $ptrdomain = $name
-          $ptrdomain += "."
-          $ptrdomain += $dnszone
-          Add-DnsServerResourceRecordPtr -Name $ptr -ZoneName $dnsreversezone -PtrDomainName $ptrdomain -ComputerName $dnssvr
-        }
-      } else {
-        Write-Error "forward dns record for $name found but doesn't match the ip $ip provided, please contact the sddc team to validate if this record is still valid or not. as per corporate policy this condition will fail a deployment" -ErrorId 4
-      }
+  # delete dns record
+  if ($reversefound -eq $true -and $forwardrecord -eq $true) {
+    Write-Host "dns record found match the provided parameters, deleting dns record as requested" -ForegroundColor Green
+    Get-DnsServerResourceRecord -ZoneName $dnszone -Name $name -Computername $dnssvr | Remove-DnsServerResourceRecord -ZoneName $dnszone -Computername $dnssvr -Confirm:$false -Force
+  } elseif ($reversefound -eq $false -and $forwardrecord -eq $false) {
+    Write-Host "specified dns record not found, nothing to do!!!" -ForegroundColor DarkGray
+  }
+  # validate if the delete action cleaned up the ptr record
+  if (Resolve-DnsName $ip -Server $dnssvr -ErrorAction silentlycontinue) {
+    Write-Warning "reverse dns record for ip $ip still present"
+    if ((Resolve-DnsName $ip -Server $dnssvr).NameHost.Split(".")[0] -ieq $name) {
+      Write-Host "the reverse dns record found match the requested forward record, proceeding with removal" -ForegroundColor Green
+      $reversenode = $ip.split(".")[3]
+      $reversenode += "."
+      $reversenode += $ip.split(".")[2]
+      Get-DnsServerResourceRecord -ZoneName $dnsreversezone -Computername $dnssvr -Node $reversenode -RRType Ptr | Remove-DnsServerResourceRecord -ZoneName $dnsreversezone -ComputerName $dnssvr -Force
+    } else {
+      Write-Error "reverse dns record for ip $ip found but doesn't match $name, please contact the sddc team to validate if this record is still valid or not." -ErrorId 2
+    }
+  }
+  # validate if the delete action cleaned up the a record
+  if ((Resolve-DnsName "$name.$zone" -ErrorAction silentlycontinue)) {
+    Write-Warning "forward dns record for host $name still present"
+    if ((Resolve-DnsName "$name.$zone").IPAddress -eq $ip) {
+      Write-Host "the forward dns record found match the requested reverse record" -ForegroundColor Green
+      Get-DnsServerResourceRecord -ZoneName $dnszone -Name $name -Computername $dnssvr | Remove-DnsServerResourceRecord -ZoneName $dnszone -Computername $dnssvr -Confirm:$false -Force
+    } else {
+      Write-Error "forward dns record for host $name found but doesn't match $ip, please contact the sddc team to validate if this record is still valid or not." -ErrorId 2
     }
   }
 } else {

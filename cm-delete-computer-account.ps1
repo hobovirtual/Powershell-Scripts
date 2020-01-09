@@ -11,35 +11,29 @@
  know.
 
  =================================================================================================================================================
-  Script:	 cm-install-ssms.ps1
+  Script:     cm-delete-computer-account.ps1
  =================================================================================================================================================
   Author:  Christian Renaud
-  Date:    2019/08/08
+  Date:    2020/01/06
   -------------------------------------------------
   Updates     
   -------------------------------------------------
   YYYY/MM/DD  by [SOMEONE]
               [DESCRIPTION]
  =================================================================================================================================================
-  Description:  This script will remotely install Microsoft SQL Management Studio on a given Windows system
+  Description:  This script will delete a computer account in active directory if it exist
  -------------------------------------------------------------------------------------------------------------------------------------------------
-  Test Environment:	- PowerShell 5.1.17134.407
-					          - Windows 2016 Server
+  Test Environment:    - PowerShell 5.1.17134.407
+                              - Windows 2016 Server
 
   Above is my test environment, but this may potentially work with other supported versions
  -------------------------------------------------------------------------------------------------------------------------------------------------
-  Pre-requisite: Elevated Rights on local powershell host and target server
-
-                 Encrypted / exported credential object available for the user running the command on the powershell host, you can find more 
-                 information on how to create this here: 
-                 https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/export-clixml?view=powershell-6
+  Pre-requisite: Elevated Rights on local powershell host and active directory server
 
                  Modify the following variables
-                  ScriptDirectory
-                  ScriptFullPath
-                  If the password is located somewhere else than the default ScriptDirectory\Access
-                
-                 SSMS source must be available in the share provided
+                  scriptdirectory
+                  scriptfullpath
+
  =================================================================================================================================================
 #>
 # ================================================================================================================================================
@@ -47,26 +41,25 @@
 # ================================================================================================================================================
 #@  Description: 
 #@
-#@    This Script can be used to configure partition on a windows server
-#@    All interactions are done remotely via winrm
+#@    This Script can be used to delete the computer object in active directory
+#@    AD Powershell module installed on the host running the script
 #@    Please make sure that all requirements have been met to sucessfully run this script
 #@    
 #@  Usage:
 #@
-#@    cm-install-ssms.ps1 .... [ Common Parameters ]
+#@    cm-delete-computer-account.ps1 .... [ Common Parameters ]
 #@
 #@  Paramaters:
 #@
-#@    [ -target ]     : target windows server [FQDN|IP]
-#@    [ -share ]      : 
+#@    [ -name ]     : computer name
 #@
 #@  Common Parameters
 #@    [ -help ]     : Display help
 #@
 #@  Examples:
 #@
-#@    cm-install-ssms.ps1 -target myserver.myorg.org -share "\\server\myshare\sql 2017"
-#@    cm-install-ssms.ps1 -help
+#@    cm-delete-computer-account.ps1 -name server001
+#@    cm-delete-computer-account.ps1 -help
 #@    
 # ================================================================================================================================================
 
@@ -75,8 +68,7 @@
 # ----------------------------------------------- #
 
 param ( 
-  [string]$target,                                # string - windows server FQDN or IP
-  [string]$share,                                 # string - share drive where SQL sources are location
+  [string]$name,                                  # string - dns record name
   [switch]$help                                   # Switch - Display Help with Comment Prefix #@ 
 )
 
@@ -84,36 +76,25 @@ param (
 # Local Variables Definition
 # ----------------------------------------------- #
 
-$ScriptDirectory = "C:\Library"                       # Script Full Directory Path (running from) ex: C:\temp\
-$ScriptFullPath = "C:\Library\cm-install-ssms.ps1"    # Script Full Path with name ex: C:\temp\myscript.ps1
+$scriptdirectory = "C:\library\powershell"                                  # Script Full Directory Path (running from) ex: C:\temp\
+$scriptfullpath = "C:\library\powershell\cm-delete-computer-account.ps1"    # Script Full Path with name ex: C:\temp\myscript.ps1
 
 # ----------------------------------------------- #
 # Modules Import
 # ----------------------------------------------- #
 
 # Function Showing Help for this script
-Import-Module -Name "$ScriptDirectory\modules\mod-show-usage.ps1" -Force:$true
+Import-Module -Name "$scriptdirectory\modules\mod-show-usage.ps1" -Force:$true
 
 # =================================================================================================================================================
 
 # if -help parameter is provided or if required parameter(s) are missing(s) - Show Script Usage
-if ($help -OR !$target -OR !$share)  {
-  Show-Usage -ScriptFullPath $ScriptFullPath
+if ($help -OR !$zone -OR !$name -OR !$ip)  {
+  Show-Usage -scriptfullpath $scriptfullpath
   exit
-} 
+}
 
-# Import Session Credentials
-$creds = Import-CliXml -Path $ScriptDirectory"\Access\service-account.xml"
-
-# Copy Source to Local Server
-$session = New-PSSession -ComputerName $target -Credential $creds
-Copy-Item $share -Destination "C:\Temp\SSMS" -Recurse -ToSession $session
-
-$ssmsinstall = "C:\Temp\SSMS\SSMS-Setup-ENU.exe"
-
-Invoke-Command -ComputerName $target -Credential $creds -ScriptBlock {
-  Start-Process -FilePath $USING:ssmsinstall -ArgumentList "/install /quiet /norestart" -Verb RunAs -Wait -WindowStyle Hidden
-  if ($?) {
-    Remove-Item "C:\Temp" -Force -Recurse -Confirm:$false
-  }
+if (Get-ADComputer -Filter 'Name -eq $name') {
+  Write-Host "Computer account for $name found in active directory, proceeding with the removal"
+	Remove-ADComputer -Identity $name -Confirm:$false -Force
 }
