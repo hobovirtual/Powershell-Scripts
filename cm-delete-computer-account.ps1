@@ -96,5 +96,5 @@ if ($help -OR !$zone -OR !$name -OR !$ip)  {
 
 if (Get-ADComputer -Filter 'Name -eq $name') {
   Write-Host "Computer account for $name found in active directory, proceeding with the removal"
-	Remove-ADComputer -Identity $name -Confirm:$false -Force
+	Remove-ADComputer -Identity $name -Confirm:$false
 }
