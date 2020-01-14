@@ -34,7 +34,6 @@
                   scriptdirectory
                   scriptfullpath
                   dnsservers
-                  dnsreversezone
 
  =================================================================================================================================================
 #>
@@ -54,16 +53,17 @@
 #@
 #@  Paramaters:
 #@
-#@    [ -zone ]     : DNS zone name
-#@    [ -name ]     : DNS name
-#@    [ -ip ]       : IP
+#@    [ -dnszone ]         : DNS forward zone name
+#@    [ -dnsreversezone ]  : DNS reverse zone name
+#@    [ -name ]            : DNS name
+#@    [ -ip ]              : IP
 #@
 #@  Common Parameters
 #@    [ -help ]     : Display help
 #@
 #@  Examples:
 #@
-#@    cm-create-dns.ps1 -zone zone.local -name server001 -ip 192.168.1.100
+#@    cm-create-dns.ps1 -dnszone zone.local -dnsreversezone 168.192.in-addr.arpa -name server001 -ip 192.168.1.100
 #@    cm-create-dns.ps1 -help
 #@    
 # ================================================================================================================================================
@@ -73,7 +73,8 @@
 # ----------------------------------------------- #
 
 param ( 
-  [string]$zone,                                  # string - dns zone name
+  [string]$dnszone,                               # string - dns forward zone name
+  [string]$dnsreversezone,                        # string - dns reverse zone name
   [string]$name,                                  # string - dns record name
   [string]$ip,                                    # string - dns record ip
   [switch]$help                                   # Switch - Display Help with Comment Prefix #@ 
@@ -96,14 +97,13 @@ Import-Module -Name "$scriptdirectory\modules\mod-show-usage.ps1" -Force:$true
 # =================================================================================================================================================
 
 # if -help parameter is provided or if required parameter(s) are missing(s) - Show Script Usage
-if ($help -OR !$zone -OR !$name -OR !$ip)  {
+if ($help -OR !$dnszone -OR !$dnsreversezone -OR !$name -OR !$ip)  {
   Show-Usage -scriptfullpath $scriptfullpath
   exit
 }
 
 # local variable definitions
 $dnsservers = @("fqdnorip","fqdnorip")
-$dnsreversezone = "Y.X.in-addr.arpa"
 $reversefound = $false
 $forwardrecord = $false
 
@@ -117,15 +117,13 @@ foreach ($dnsserver in $dnsservers) {
 }
 
 if ($dnssvr) {
-  $dnszone = (Get-DnsServerZone -Name $zone -Computername $dnssvr).ZoneName
-  $dnsreversezone = ((Get-DnsServerZone -Computername $dnssvr) | where {$_.ZoneName -eq $dnsreversezone}).ZoneName
   # validate reverse dns record
   if (Resolve-DnsName $ip -Server $dnssvr -ErrorAction silentlycontinue) {
     $reversefound = $true
     Write-Warning "reverse dns record for ip $ip found"
   }
   # validate forward dns record
-  if ((Resolve-DnsName "$name.$zone" -ErrorAction silentlycontinue)) {
+  if ((Resolve-DnsName "$name.$dnszone" -Server $dnssvr -ErrorAction silentlycontinue)) {
     $forwardrecord = $true
     Write-Warning "forward dns record for $name found"
   }
@@ -152,7 +150,7 @@ if ($dnssvr) {
     
     if ($forwardrecord -eq $true) {
       Write-Host "a forward dns record was found, running validation on this record" -ForegroundColor DarkGray
-      if ((Resolve-DnsName "$name.$zone").IPAddress -eq $ip) {
+      if ((Resolve-DnsName "$name.$dnszone").IPAddress -Server $dnssvr -eq $ip) {
         Write-Host "the forward dns record found match the requested reverse record" -ForegroundColor Green
         
         if ($reversefound -eq $false) {

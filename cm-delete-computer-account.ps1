@@ -89,7 +89,7 @@ Import-Module -Name "$scriptdirectory\modules\mod-show-usage.ps1" -Force:$true
 # =================================================================================================================================================
 
 # if -help parameter is provided or if required parameter(s) are missing(s) - Show Script Usage
-if ($help -OR !$zone -OR !$name -OR !$ip)  {
+if ($help -OR !$name)  {
   Show-Usage -scriptfullpath $scriptfullpath
   exit
 }
