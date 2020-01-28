@@ -2,14 +2,11 @@
  =================================================================================================================================================
    Disclaimer
  =================================================================================================================================================
-
  This code is not officially supported and is provided as is.
-
  Although I intend to maintain these as best as i can, the code below may stop working with future release.
  I will provide as much information and comments in this code to guide you.
  I intend to manage error exception in the best i can, although some exceptions may not be trapped. If you encounter some issue, please let me 
  know.
-
  =================================================================================================================================================
   Script:     cm-create-dns.ps1
  =================================================================================================================================================
@@ -25,16 +22,14 @@
  -------------------------------------------------------------------------------------------------------------------------------------------------
   Test Environment:    - PowerShell 5.1.17134.407
                               - Windows 2016 Server
-
   Above is my test environment, but this may potentially work with other supported versions
  -------------------------------------------------------------------------------------------------------------------------------------------------
   Pre-requisite: Elevated Rights on local powershell host and dns server
-
                  Modify the following variables
                   scriptdirectory
                   scriptfullpath
                   dnsservers
-
+                  dnsreversezone
  =================================================================================================================================================
 #>
 # ================================================================================================================================================
@@ -53,17 +48,16 @@
 #@
 #@  Paramaters:
 #@
-#@    [ -dnszone ]         : DNS forward zone name
-#@    [ -dnsreversezone ]  : DNS reverse zone name
-#@    [ -name ]            : DNS name
-#@    [ -ip ]              : IP
+#@    [ -zone ]     : DNS zone name
+#@    [ -name ]     : DNS name
+#@    [ -ip ]       : IP
 #@
 #@  Common Parameters
 #@    [ -help ]     : Display help
 #@
 #@  Examples:
 #@
-#@    cm-create-dns.ps1 -dnszone zone.local -dnsreversezone 168.192.in-addr.arpa -name server001 -ip 192.168.1.100
+#@    cm-create-dns.ps1 -zone zone.local -name server001 -ip 192.168.1.100
 #@    cm-create-dns.ps1 -help
 #@    
 # ================================================================================================================================================
@@ -73,8 +67,7 @@
 # ----------------------------------------------- #
 
 param ( 
-  [string]$dnszone,                               # string - dns forward zone name
-  [string]$dnsreversezone,                        # string - dns reverse zone name
+  [string]$zone,                                  # string - dns zone name
   [string]$name,                                  # string - dns record name
   [string]$ip,                                    # string - dns record ip
   [switch]$help                                   # Switch - Display Help with Comment Prefix #@ 
@@ -84,8 +77,8 @@ param (
 # Local Variables Definition
 # ----------------------------------------------- #
 
-$scriptdirectory = "C:\library\powershell"                     # Script Full Directory Path (running from) ex: C:\temp\
-$scriptfullpath = "C:\library\powershell\cm-create-dns.ps1"    # Script Full Path with name ex: C:\temp\myscript.ps1
+$scriptdirectory = "D:\library\powershell"                     # Script Full Directory Path (running from) ex: C:\temp\
+$scriptfullpath = "D:\library\powershell\cm-create-dns.ps1"    # Script Full Path with name ex: C:\temp\myscript.ps1
 
 # ----------------------------------------------- #
 # Modules Import
@@ -97,15 +90,17 @@ Import-Module -Name "$scriptdirectory\modules\mod-show-usage.ps1" -Force:$true
 # =================================================================================================================================================
 
 # if -help parameter is provided or if required parameter(s) are missing(s) - Show Script Usage
-if ($help -OR !$dnszone -OR !$dnsreversezone -OR !$name -OR !$ip)  {
+if ($help -OR !$zone -OR !$name -OR !$ip)  {
   Show-Usage -scriptfullpath $scriptfullpath
   exit
 }
 
 # local variable definitions
-$dnsservers = @("fqdnorip","fqdnorip")
+$dnsservers = @("wspicdnscc01.res.bngf.local","wspicdnscc02.res.bngf.local")
+$dnsreversezone = "61.10.in-addr.arpa"
 $reversefound = $false
 $forwardrecord = $false
+$return = @{}
 
 # test dns server connectivity
 foreach ($dnsserver in $dnsservers) {
@@ -117,20 +112,26 @@ foreach ($dnsserver in $dnsservers) {
 }
 
 if ($dnssvr) {
+  $creds = Import-CliXml -Path $ScriptDirectory"\access\svcdns.xml"
+  
   # validate reverse dns record
   if (Resolve-DnsName $ip -Server $dnssvr -ErrorAction silentlycontinue) {
     $reversefound = $true
     Write-Warning "reverse dns record for ip $ip found"
   }
+
   # validate forward dns record
-  if ((Resolve-DnsName "$name.$dnszone" -Server $dnssvr -ErrorAction silentlycontinue)) {
+  if ((Resolve-DnsName "$name.$zone" -Server $dnssvr -ErrorAction silentlycontinue)) {
     $forwardrecord = $true
     Write-Warning "forward dns record for $name found"
   }
+
   # create dns record
   if ($reversefound -eq $false -and $forwardrecord -eq $false) {
     Write-Host "no previous/stale dns record found, creating dns record as requested" -ForegroundColor Green
-    Add-DnsServerResourceRecordA $dnszone -Name $name -IPv4Address $ip -CreatePtr -ComputerName $dnsserver  
+    Invoke-Command -ComputerName $dnssvr -Credential $creds -ScriptBlock {
+      Add-DnsServerResourceRecordA $USING:zone -Name $USING:name -IPv4Address $USING:ip -CreatePtr -ComputerName $USING:dnssvr
+    } 
   } else {
     if ($reversefound -eq $true) {
     Write-Host "a reverse dns record was found, running validation on this record" -ForegroundColor DarkGray
@@ -140,17 +141,23 @@ if ($dnssvr) {
         
         if ($forwardrecord -eq $false) {
           Write-Host "forward record missing....proceeding with the creation of the missing record"
-          Add-DnsServerResourceRecordA $dnszone -Name $name -IPv4Address $ip -ComputerName $dnssvr
+          Invoke-Command -ComputerName $dnssvr -Credential $creds -ScriptBlock {
+            Add-DnsServerResourceRecordA $USING:zone -Name $USING:name -IPv4Address $USING:ip -ComputerName $USING:dnssvr
+          }
         }
 
       } else {
-        Write-Error "reverse dns record for ip $ip found but doesn't match $name, please contact the sddc team to validate if this record is still valid or not. as per corporate policy this condition will fail a deployment" -ErrorId 2
+          $msg = "reverse dns record for ip $ip found but doesn't match $name, please contact the sddc team to validate if this record is still valid or not. as per corporate policy this condition will fail a deployment"
+          $status = 2
+          $return.status = $status
+          $return.msg = $msg
+          Return $return
       }
     } 
     
     if ($forwardrecord -eq $true) {
       Write-Host "a forward dns record was found, running validation on this record" -ForegroundColor DarkGray
-      if ((Resolve-DnsName "$name.$dnszone").IPAddress -Server $dnssvr -eq $ip) {
+      if ((Resolve-DnsName "$name.$zone").IPAddress -eq $ip) {
         Write-Host "the forward dns record found match the requested reverse record" -ForegroundColor Green
         
         if ($reversefound -eq $false) {
@@ -161,14 +168,20 @@ if ($dnssvr) {
           $ptr += $ip.split(".")[2]
           $ptrdomain = $name
           $ptrdomain += "."
-          $ptrdomain += $dnszone
-          Add-DnsServerResourceRecordPtr -Name $ptr -ZoneName $dnsreversezone -PtrDomainName $ptrdomain -ComputerName $dnssvr
+          $ptrdomain += $zone
+          Invoke-Command -ComputerName $dnssvr -Credential $creds -ScriptBlock {
+            Add-DnsServerResourceRecordPtr -Name $USING:ptr -ZoneName $USING:dnsreversezone -PtrDomainName $USING:ptrdomain -ComputerName $USING:dnssvr
+          }
         }
       } else {
-        Write-Error "forward dns record for $name found but doesn't match the ip $ip provided, please contact the sddc team to validate if this record is still valid or not. as per corporate policy this condition will fail a deployment" -ErrorId 4
+          $msg = "forward dns record for $name found but doesn't match the ip $ip provided, please contact the sddc team to validate if this record is still valid or not. as per corporate policy this condition will fail a deployment"
+          $status = 4
+          $return.status = $status
+          $return.msg = $msg
+          Return $return
       }
     }
   }
 } else {
-  Write-Error "No DNS server(s) was/were available at the time this script ran, please validate DNS server connectivity and/or availability"
+  Write-Host "No DNS server(s) was/were available at the time this script ran, please validate DNS server connectivity and/or availability"
 }
