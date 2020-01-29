@@ -96,8 +96,8 @@ if ($help -OR !$zone -OR !$name -OR !$ip)  {
 }
 
 # local variable definitions
-$dnsservers = @("wspicdnscc01.res.bngf.local","wspicdnscc02.res.bngf.local")
-$dnsreversezone = "61.10.in-addr.arpa"
+$dnsservers = @("[DNS]","[DNS]")
+$dnsreversezone = "10.in-addr.arpa"
 $reversefound = $false
 $forwardrecord = $false
 $return = @{}
