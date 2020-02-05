@@ -15,8 +15,8 @@
   -------------------------------------------------
   Updates     
   -------------------------------------------------
-  YYYY/MM/DD  by [SOMEONE]
-              [DESCRIPTION]
+  2020/01/28  by Christian Renaud
+              Change return code and message to leverage vRO built in PowerShell Object
  =================================================================================================================================================
   Description:  This script will delete a forward and it's associated pointer dns record in a given dns zone
  -------------------------------------------------------------------------------------------------------------------------------------------------
